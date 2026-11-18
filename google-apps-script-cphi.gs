@@ -299,7 +299,7 @@ function registerVisitor(data) {
     var ref = existing ? existing.ref : makeRef();
     var row = [
       new Date(), ref, 'registered',
-      data.name || '', data.email || '', data.phone || '',
+      data.name || '', data.email || '', sheetPhone(data.phone),
       '', '', '', '', '[]',
     ];
 
@@ -362,7 +362,7 @@ function claimGift(data) {
 
       var claimRow = [
         new Date(), prior ? prior.ref : makeRef(), 'prize-claimed',
-        data.name || '', data.email || '', data.phone || '',
+        data.name || '', data.email || '', sheetPhone(data.phone),
         '', '', '', title, '[]',
       ];
       if (prior) {
@@ -411,7 +411,7 @@ function submitEntry(data) {
 
     var row = [
       new Date(), ref, 'entered',
-      data.name || '', data.email || '', data.phone || '',
+      data.name || '', data.email || '', sheetPhone(data.phone),
       data.score, data.total, data.percent,
       data.gift || (existing ? existing.prize : '') || '',
       JSON.stringify(data.answers || []),
@@ -474,10 +474,14 @@ function findEntry(email, phone) {
   if (lastRow < 2) return null;
 
   var normEmail = String(email || '').trim().toLowerCase();
-  var normPhone = digitsOnly(phone);
+  var allDigits = digitsOnly(phone);
+  var normPhone = allDigits.length >= 10 ? allDigits.slice(-10) : '';
   if (!normEmail && !normPhone) return null;
 
   var rows = sheet.getRange(2, 1, lastRow - 1, ENTRY_HEADERS.length).getDisplayValues();
+  // Legacy rows hold a broken formula rather than text — see
+  // phoneDigitsFromSheet for why the formula text is worth reading.
+  var phoneFormulas = sheet.getRange(2, COL.phone + 1, lastRow - 1, 1).getFormulas();
 
   for (var i = 0; i < rows.length; i++) {
     var r = rows[i];
@@ -485,7 +489,7 @@ function findEntry(email, phone) {
     if (status === 'cancelled') continue;
 
     var rowEmail = String(r[COL.email] || '').trim().toLowerCase();
-    var rowPhone = digitsOnly(r[COL.phone]);
+    var rowPhone = phoneDigitsFromSheet(r[COL.phone], phoneFormulas[i][0]);
 
     if ((normEmail && rowEmail === normEmail) || (normPhone && rowPhone === normPhone)) {
       return {
@@ -693,13 +697,17 @@ function setupSheets() {
     sheet.appendRow(ENTRY_HEADERS);
     sheet.getRange(1, 1, 1, ENTRY_HEADERS.length).setFontWeight('bold');
     sheet.setFrozenRows(1);
-    // Sheets is eager about dates and long digit strings: force the phone
-    // column to plain text so "+91 9876543210" is not mangled into a number.
-    sheet.getRange(2, COL.phone + 1, sheet.getMaxRows() - 1, 1).setNumberFormat('@');
     Logger.log('Created the ' + ENTRIES_TAB + ' tab.');
   } else {
-    Logger.log('The ' + ENTRIES_TAB + ' tab already exists — left as-is.');
+    Logger.log('The ' + ENTRIES_TAB + ' tab already exists — data left as-is.');
   }
+
+  // Outside the if, so it is applied even to a tab someone created by hand
+  // before running this — which is exactly the case that used to slip
+  // through. Sheets is eager about long digit strings and about anything
+  // beginning with "+", so the phone column is forced to plain text.
+  sheet.getRange(1, COL.phone + 1, sheet.getMaxRows(), 1).setNumberFormat('@');
+  Logger.log('Phone column forced to plain text.');
 
   var settings = tab(ss, SETTINGS_TAB);
   if (settings) {
@@ -719,6 +727,46 @@ function setupSheets() {
   Logger.log(content
     ? 'Found the ' + QUESTIONS_TAB + ' tab with ' + Math.max(0, content.getLastRow() - 1) + ' question rows.'
     : 'WARNING: no ' + QUESTIONS_TAB + ' tab in the content sheet — the quiz will have no questions.');
+}
+
+/**
+ * One-time repair for rows written before sheetPhone() existed, whose phone
+ * cell holds a broken formula instead of text (see phoneDigitsFromSheet).
+ * Such a row is invisible to findEntry, so the visitor can spin again and
+ * every later step appends a duplicate instead of upgrading their row.
+ *
+ * Run it manually from the editor after deploying. Safe to re-run: a row
+ * already holding plain digits is left untouched.
+ */
+function repairEntryPhones() {
+  var sheet = entriesSheet();
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) {
+    Logger.log('Nothing to repair — no entries yet.');
+    return;
+  }
+
+  var range = sheet.getRange(2, COL.phone + 1, lastRow - 1, 1);
+  var display = range.getDisplayValues();
+  var formulas = range.getFormulas();
+  var fixed = 0;
+  var unrecoverable = 0;
+
+  for (var i = 0; i < display.length; i++) {
+    var current = String(display[i][0] || '').trim();
+    if (current && current === digitsOnly(current)) continue; // already plain digits
+
+    var recovered = digitsOnly(formulas[i][0]) || digitsOnly(current);
+    if (recovered.length >= 10) {
+      sheet.getRange(i + 2, COL.phone + 1).setNumberFormat('@').setValue(recovered);
+      fixed++;
+    } else if (current) {
+      Logger.log('Row ' + (i + 2) + ': could not recover a phone from "' + current + '"');
+      unrecoverable++;
+    }
+  }
+
+  Logger.log('Repaired ' + fixed + ' phone cell(s); ' + unrecoverable + ' could not be recovered.');
 }
 
 /** Run after editing QuestionsCPHI or Gifts to skip the cache TTL. */
@@ -750,6 +798,38 @@ function makeRef() {
 
 function digitsOnly(value) {
   return String(value == null ? '' : value).replace(/\D/g, '');
+}
+
+/**
+ * Google Sheets parses any cell that BEGINS with "+", "=", "-" or "@" as a
+ * formula. The app sends "+91 9876543210", so writing it straight into the
+ * sheet lands a broken formula in the cell: getDisplayValues() then returns
+ * "#ERROR!", digitsOnly() on that returns "", and findEntry can never match
+ * the row again — every later step appends a NEW row instead of upgrading
+ * the one that is already there, and the one-prize-per-mobile check silently
+ * passes everybody.
+ *
+ * Storing the digits alone sidesteps it entirely: "919876543210" can never
+ * be read as a formula, and it is exactly the form findEntry compares
+ * against, so what is stored and what is matched can never drift apart.
+ */
+function sheetPhone(value) {
+  return digitsOnly(value);
+}
+
+/**
+ * Reads a phone back out of the sheet as its last 10 digits.
+ *
+ * The formula fallback is for rows written before sheetPhone existed: the
+ * cell displays "#ERROR!" but its FORMULA text is still the original
+ * "+91 9876543210", so the number is recoverable. Matching on the last 10
+ * digits means "+91 98765 43210", "9876543210" and "0919876543210" are all
+ * recognised as the same person — the same rule the doctor app settled on.
+ */
+function phoneDigitsFromSheet(displayValue, formulaValue) {
+  var digits = digitsOnly(displayValue);
+  if (digits.length < 10) digits = digitsOnly(formulaValue);
+  return digits.length >= 10 ? digits.slice(-10) : '';
 }
 
 function slugify(value) {

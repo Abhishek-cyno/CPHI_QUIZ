@@ -139,6 +139,31 @@ silently quiet:
   arriving with nothing in the logs to explain it. A missing webhook setting is
   logged too, rather than returning silently.
 
+## The phone column is plain text on purpose
+
+Google Sheets parses any cell beginning with `+`, `=`, `-` or `@` as a formula. The
+app sends phone numbers as `+91 9876543210`, so writing that straight into a cell
+lands a **broken formula** there: the cell reads `#ERROR!`, and the row becomes
+invisible to `findEntry` — every later step then appends a new row instead of
+upgrading the existing one, and the one-prize-per-mobile check silently passes
+everybody.
+
+Three things guard against it:
+
+- `sheetPhone()` stores the digits alone (`919876543210`), which can never be read
+  as a formula and is exactly the form the matching compares against.
+- `setupSheets` forces the phone column to plain text **every time it runs**, not
+  just when it creates the tab — a tab someone made by hand is covered too.
+- `phoneDigitsFromSheet()` falls back to the cell's formula text, so rows written
+  before this was fixed are still recoverable.
+
+If you have broken rows, run **`repairEntryPhones`** once from the editor. It
+rewrites recoverable cells as plain digits and leaves anything already correct
+alone, so it is safe to re-run.
+
+Matching is on the **last 10 digits**, so `+91 98765 43210`, `9876543210` and
+`09876543210` are all recognised as the same person.
+
 ## Prize rules
 
 - **One prize per mobile number**, enforced server-side in `claimGift` under a script

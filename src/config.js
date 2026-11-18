@@ -26,5 +26,5 @@ export const CONFIG = {
   // Leave EMPTY ('') to run entirely on the bundled questions in
   // src/data/questions.json — handy for local work. The wheel needs the
   // endpoint, though: prizes only ever come from the Sheet.
-  apiEndpoint: '',
+  apiEndpoint: 'https://script.google.com/macros/s/AKfycbzAvqBARVTgR0MuLXvCIeWGcjm4rBny6XwTHKMw5_ldrYiX2MRixXjwNBoGmMDFZCM7jg/exec',
 }

@@ -23,21 +23,31 @@ Landing → Register → Quiz intro → 3 questions → Score → 🎡 Spin → 
 There is no slot picker, no Calendar invite and no `?skipquiz=1` variant here — all
 of that only existed to get a rep in front of a doctor.
 
-## The theme
+## The look
 
-Both brand values are sampled from `public/images/eqova-logo.png`:
+Deliberately **not** the medicon design. Same flow, different room: medicon is a
+light clinical page with a doctor illustration; this is a dark event-kiosk built for a
+tablet on a stall.
 
-- **navy `#0C3C54`** — the *eqova* wordmark. Carries every primary action, heading
-  and the header rule.
-- **gold `#F4AC3C`** — the cross device. Used as an accent only: progress bars,
-  completed stepper dots, the score card, the wheel hub. Never a whole button, so
-  it keeps its punch.
-- **grey `#9CA4A4`** — the logo's grey, used for the consolation wheel slice.
+| | Medicon | CPHI |
+|---|---|---|
+| Canvas | Light, white cards | Deep Eqova navy, glass panels, faint hexagon lattice, drifting capsules |
+| Type | Inter throughout | Sora headlines, Inter body, JetBrains Mono for codes and labels |
+| Landing | Copy + doctor illustration + how-it-works section | One screen: oversized headline + a slowly turning prize wheel |
+| Progress | Numbered dot stepper | Four-segment level bar that fills gold |
+| Quiz | Stacked options + side progress card | 2×2 answer tiles, result pips per question |
+| Score | Trophy + number | Animated gold score ring |
+| Wheel | Plain wheel in a card | Wheel inside a ring of marquee bulbs that chase while it spins, controls beside it |
+| Finish | Thank-you card | A tear-off **prize ticket** with the reference on the stub |
 
-The palette lives in `:root` in `src/styles/index.css`. The accent decisions are in
-one clearly marked block at the **bottom** of that file, so they override the base
-rules without those having to be rewritten — delete that block and you are back to a
-plain navy theme.
+Brand values are sampled from `public/images/eqova-logo.png`: navy `#0C3C54` is the
+room, gold `#F4AC3C` is reserved for anything you press and anything you win, grey
+`#9CA4A4` is the consolation slice. All tokens are in `:root` at the top of
+`src/styles/index.css`.
+
+Checked at 1024×768 (stall tablet, the whole wheel screen fits without scrolling)
+and 390×844 (a visitor's phone), with no horizontal overflow at either — including
+mid-spin, when the rotating wheel briefly reports a larger box.
 
 ## Setup
 
@@ -183,11 +193,12 @@ src/
 ├── context/FlowContext    step machine, question bank, prize pool, score
 ├── pages/                 one file per step of the flow
 ├── components/
-│   ├── SpinWheel.jsx      the wheel, painted in brand navy/gold
-│   └── Stepper.jsx        the four phases
+│   ├── Backdrop.jsx       glow, hexagon lattice, drifting capsules
+│   ├── ProgressRail.jsx   the four-segment level bar
+│   └── SpinWheel.jsx      the wheel (GiftPage wraps it in marquee bulbs)
 ├── utils/api.js           every call to the Apps Script
 ├── data/questions.json    bundled fallback bank (51 questions)
-└── styles/index.css       palette in :root, brand accents at the bottom
+└── styles/index.css       the whole look; tokens in :root
 
 google-apps-script-cphi.gs        the whole backend
 sheet-seed-QuestionsCPHI.tsv      paste into the QuestionsCPHI tab

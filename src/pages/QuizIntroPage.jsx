@@ -1,15 +1,17 @@
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 import { useFlow, STEPS } from '../context/FlowContext.jsx'
 import { CONFIG } from '../config.js'
 
-const POINTS = [
-  { icon: '📋', text: `You'll be asked ${CONFIG.questionsPerQuiz} questions` },
-  { icon: '⚡', text: "You'll see the result instantly" },
-  { icon: '⏱️', text: 'It will only take a minute!' },
-]
-
 export default function QuizIntroPage() {
   const { setStep, visitor, buildQuiz, bank } = useFlow()
+  const reduced = useReducedMotion()
+  const firstName = visitor.name.split(' ')[0]
+
+  const STATS = [
+    { value: CONFIG.questionsPerQuiz, label: 'questions', note: `random from ${bank.length}` },
+    { value: 4, label: 'options each', note: 'one is right' },
+    { value: 1, label: 'right answer', note: 'unlocks the wheel' },
+  ]
 
   function start() {
     buildQuiz()
@@ -17,40 +19,37 @@ export default function QuizIntroPage() {
   }
 
   return (
-    <div className="card card--center center-narrow">
-      <motion.div
-        className="intro__icon"
-        initial={{ scale: 0.7, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: 'spring', stiffness: 140, delay: 0.05 }}
-      >
-        📋
-      </motion.div>
+    <div className="panel panel--narrow panel--center">
+      <header className="panel__head">
+        <span className="kicker">Step 02</span>
+        <h2 className="panel__title">
+          {firstName ? `Ready, ${firstName}?` : 'Ready?'}
+        </h2>
+        <p className="panel__sub">
+          No timer and no negative marking. You'll see whether you got it right straight after each answer.
+        </p>
+      </header>
 
-      <h2 className="card__title">Ready for a quick quiz?</h2>
-      <p className="card__sub">
-        {visitor.name ? `${visitor.name}, ` : ''}you'll be asked {CONFIG.questionsPerQuiz} questions
-        drawn at random from our bank of {bank.length} pharma questions.
-      </p>
-
-      <ul className="intro__list">
-        {POINTS.map((p, i) => (
+      <ul className="stats">
+        {STATS.map((s, i) => (
           <motion.li
-            key={p.text}
-            initial={{ opacity: 0, x: -12 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.15 + i * 0.08 }}
+            key={s.label}
+            className="stats__item"
+            initial={{ opacity: 0, y: reduced ? 0 : 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: reduced ? 0 : 0.1 + i * 0.08, duration: 0.5 }}
           >
-            <span className="intro__bullet">{p.icon}</span>
-            {p.text}
+            <span className="stats__value">{s.value}</span>
+            <span className="stats__label">{s.label}</span>
+            <span className="stats__note">{s.note}</span>
           </motion.li>
         ))}
       </ul>
 
-      <div className="form__actions" style={{ width: '100%', maxWidth: 360 }}>
+      <div className="actions">
         <button className="btn btn--ghost" onClick={() => setStep(STEPS.REGISTER)}>Back</button>
-        <button className="btn btn--primary" onClick={start}>
-          Start Quiz <span className="btn__arrow">→</span>
+        <button className="btn btn--gold" onClick={start}>
+          Start the quiz <span className="btn__arrow" aria-hidden="true">→</span>
         </button>
       </div>
     </div>

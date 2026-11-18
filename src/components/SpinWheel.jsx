@@ -21,17 +21,17 @@ const R = 96
 const TURNS = 6 // full revolutions before settling
 const SPIN_SECONDS = 5
 
-// premium and standard slices alternate the two Eqova brand colours, so the
-// wheel reads as navy-and-gold rather than a rainbow — only superpremium and
-// consolation get a dedicated look below. The odd length (5) means the
-// alternation does not line up with an even slice count and freeze into two
-// solid halves.
+// premium and standard slices cycle the Eqova navy and gold plus one pale
+// slice, so neighbouring wedges always contrast — on this app's dark navy
+// background a run of dark slices would melt into the page. The odd length
+// (5) keeps the cycle from lining up with an even slice count and freezing
+// into stripes.
 const SEGMENT_COLORS = [
-  { bg: '#0c3c54', fg: '#ffffff' },
-  { bg: '#f4ac3c', fg: '#062838' },
   { bg: '#114f6e', fg: '#ffffff' },
-  { bg: '#f8c470', fg: '#062838' },
+  { bg: '#f4ac3c', fg: '#1b1200' },
+  { bg: '#e8eef2', fg: '#0c3c54' },
   { bg: '#1a6b93', fg: '#ffffff' },
+  { bg: '#ffc768', fg: '#1b1200' },
 ]
 
 // The two special tiers (see the PRIZE WHEEL note in
@@ -143,7 +143,7 @@ export default function SpinWheel({ items, winnable, onResult, spinning, disable
               <stop offset="100%" stopColor="#a9680d" />
             </linearGradient>
           </defs>
-          <circle cx={C} cy={C} r={R + 3} fill="#ffffff" />
+          <circle cx={C} cy={C} r={R + 3} fill="#f4ac3c" />
           {items.map((item, i) => {
             const color = colorForItem(item, i)
             const mid = i * step + step / 2
@@ -195,7 +195,7 @@ export default function SpinWheel({ items, winnable, onResult, spinning, disable
               </g>
             )
           })}
-          <circle cx={C} cy={C} r={R} fill="none" stroke="#ffffff" strokeWidth="4" />
+          <circle cx={C} cy={C} r={R} fill="none" stroke="#f4ac3c" strokeWidth="3" />
         </motion.svg>
 
         <button

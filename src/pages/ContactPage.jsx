@@ -7,14 +7,13 @@ import { capitalizeName } from '../utils/formatName.js'
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 
 /**
- * The last step before Thank You, and the write that actually matters: the
+ * The last step before the ticket, and the write that actually matters: the
  * registration row so far holds only name/mobile/email, and this is what
  * adds the quiz result and the prize to it.
  *
- * Everything is pre-filled from the registration form, so for most people
- * this is a read-and-confirm rather than a second round of typing — but
- * the fields stay editable, because the stall is exactly where someone
- * notices they fat-fingered their own email.
+ * Everything is pre-filled from registration, so for most people this is a
+ * read-and-confirm — but the fields stay editable, because the stall is
+ * exactly where someone notices they mistyped their own email.
  */
 export default function ContactPage() {
   const { visitor, gift, score, questions, answers, setEntry, setStep } = useFlow()
@@ -25,7 +24,8 @@ export default function ContactPage() {
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
 
-  async function onConfirm() {
+  async function onConfirm(e) {
+    e.preventDefault()
     if (!name.trim()) return setFormError('Please enter your name.')
     if (!EMAIL_RE.test(email.trim())) return setFormError('Please enter a valid email address.')
     if (phone.replace(/\D/g, '').length < 10) return setFormError('Please enter a valid WhatsApp number.')
@@ -59,26 +59,36 @@ export default function ContactPage() {
   const ready = name.trim() && email.trim() && phone.trim()
 
   return (
-    <div className="card center-narrow">
+    <div className="panel panel--narrow">
       <LoadingOverlay show={submitting} />
 
-      <div style={{ textAlign: 'center' }}>
-        <h2 className="card__title">Almost done — confirm your details</h2>
-        <p className="card__sub" style={{ margin: '6px auto 0' }}>
-          We'll use these to hand over <strong>{gift?.title}</strong>. Change anything that doesn't look right.
-        </p>
-      </div>
+      <header className="panel__head">
+        <span className="kicker">Step 04</span>
+        <h2 className="panel__title">Check your details</h2>
+        <p className="panel__sub">Your prize ticket and confirmation email go to these. Fix anything that's off.</p>
+      </header>
 
-      <form className="form" onSubmit={(e) => { e.preventDefault(); onConfirm() }}>
+      {gift && (
+        <div className="summary">
+          <span className="summary__emoji" aria-hidden="true">{gift.emoji}</span>
+          <span className="summary__text">
+            <span className="summary__label">{gift.tier === 'consolation' ? 'Result' : 'Prize'}</span>
+            <span className="summary__title">{gift.title}</span>
+          </span>
+          <span className="summary__score">{score}/{questions.length}</span>
+        </div>
+      )}
+
+      <form className="form" onSubmit={onConfirm} noValidate>
         <label className="field">
-          <span className="field__label">Full Name</span>
+          <span className="field__label">Full name</span>
           <input
             className="field__input"
             type="text"
-            placeholder="Shivangi Mittal"
             value={name}
             onChange={(e) => setName(capitalizeName(e.target.value))}
             autoCapitalize="words"
+            autoComplete="name"
           />
         </label>
 
@@ -87,34 +97,34 @@ export default function ContactPage() {
           <input
             className="field__input"
             type="email"
-            placeholder="you@company.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
           />
         </label>
 
         <label className="field">
           <span className="field__label">
-            WhatsApp Number <span className="field__hint">(for prize updates)</span>
+            WhatsApp number <span className="field__hint">for prize updates</span>
           </span>
           <input
             className="field__input"
             type="tel"
             inputMode="tel"
-            placeholder="+91 98765 43210"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
+            autoComplete="tel"
           />
         </label>
 
-        {formError && <p className="form__error">{formError}</p>}
+        {formError && <p className="alert alert--bad" role="alert">{formError}</p>}
 
-        <div className="form__actions">
+        <div className="actions">
           <button type="button" className="btn btn--ghost" onClick={() => setStep(STEPS.GIFT)} disabled={submitting}>
             Back
           </button>
-          <button type="submit" className="btn btn--primary" disabled={!ready || submitting}>
-            {submitting ? 'Saving…' : 'Confirm'} <span className="btn__arrow">→</span>
+          <button type="submit" className="btn btn--gold" disabled={!ready || submitting}>
+            {submitting ? 'Saving…' : 'Get my ticket'} <span className="btn__arrow" aria-hidden="true">→</span>
           </button>
         </div>
       </form>

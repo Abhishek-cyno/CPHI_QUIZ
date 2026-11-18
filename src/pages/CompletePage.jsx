@@ -1,60 +1,53 @@
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 import { useFlow, STEPS } from '../context/FlowContext.jsx'
 
-const CONFETTI = ['#0c3c54', '#1d5f80', '#f4ac3c', '#22c55e', '#ef4444', '#9ca4a4']
+const SIZE = 180
+const STROKE = 12
+const RADIUS = (SIZE - STROKE) / 2
+const CIRCUMFERENCE = 2 * Math.PI * RADIUS
 
 export default function CompletePage() {
   const { score, questions, visitor, setStep } = useFlow()
+  const reduced = useReducedMotion()
   const total = questions.length
-  const pct = total ? Math.round((score / total) * 100) : 0
+  const ratio = total ? score / total : 0
+  const firstName = visitor.name.split(' ')[0]
 
-  const message =
-    pct === 100 ? 'Excellent! 🎉' :
-    pct >= 67 ? 'Well done! 👏' :
-    'Nice effort! 🙌'
+  const headline =
+    ratio === 1 ? 'Perfect score!' :
+    ratio >= 0.67 ? 'Nicely done!' :
+    'You unlocked a spin!'
 
   return (
-    <div className="card center-narrow">
-      <div className="complete-layout">
-        <div className="trophy">
-          🏆
-          <span className="confetti">
-            {Array.from({ length: 14 }).map((_, i) => (
-              <motion.i
-                key={i}
-                style={{ left: `${(i / 14) * 100}%`, background: CONFETTI[i % CONFETTI.length] }}
-                initial={{ y: 40, opacity: 0, rotate: 0 }}
-                animate={{ y: [-10, 120], opacity: [1, 1, 0], rotate: 360 }}
-                transition={{ duration: 1.6, delay: 0.2 + i * 0.05, ease: 'easeOut' }}
-              />
-            ))}
-          </span>
-        </div>
+    <div className="panel panel--narrow panel--center">
+      <span className="kicker">Your score</span>
 
-        <motion.h2
-          className="card__title"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-        >
-          Quiz Completed!
-        </motion.h2>
-        <p className="card__sub">
-          Great job{visitor.name ? `, ${visitor.name}` : ''}! You've finished the quiz.
-        </p>
+      <div className="score">
+        <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} aria-hidden="true">
+          <circle className="score__track" cx={SIZE / 2} cy={SIZE / 2} r={RADIUS} strokeWidth={STROKE} />
+          <motion.circle
+            className="score__arc"
+            cx={SIZE / 2} cy={SIZE / 2} r={RADIUS}
+            strokeWidth={STROKE}
+            strokeDasharray={CIRCUMFERENCE}
+            initial={{ strokeDashoffset: CIRCUMFERENCE }}
+            animate={{ strokeDashoffset: CIRCUMFERENCE * (1 - ratio) }}
+            transition={{ duration: reduced ? 0 : 1.2, delay: reduced ? 0 : 0.2, ease: [0.16, 1, 0.3, 1] }}
+          />
+        </svg>
+        <span className="score__value">
+          {score}<small>/{total}</small>
+        </span>
+      </div>
 
-        <motion.div
-          className="score-card"
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: 'spring', stiffness: 140, delay: 0.2 }}
-        >
-          <div className="score-card__num">{score}<small>/{total}</small></div>
-          <div className="score-card__label">{message}</div>
-        </motion.div>
+      <h2 className="panel__title">{headline}</h2>
+      <p className="panel__sub">
+        {firstName ? `${firstName}, you` : 'You'} got {score} of {total} right. That's enough to spin the prize wheel.
+      </p>
 
-        <button className="btn btn--primary btn--lg" onClick={() => setStep(STEPS.GIFT)}>
-          Continue to Rewards <span className="btn__arrow">→</span>
+      <div className="actions actions--single">
+        <button className="btn btn--gold btn--xl" onClick={() => setStep(STEPS.GIFT)}>
+          Spin the wheel <span className="btn__arrow" aria-hidden="true">→</span>
         </button>
       </div>
     </div>

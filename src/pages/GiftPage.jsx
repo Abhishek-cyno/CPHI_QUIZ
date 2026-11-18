@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { useFlow, STEPS } from '../context/FlowContext.jsx'
 import SpinWheel from '../components/SpinWheel.jsx'
 import LoadingOverlay from '../components/motion/LoadingOverlay.jsx'
@@ -44,6 +44,18 @@ export default function GiftPage() {
   )
 }
 
+/** The three ways the wheel can be withheld, in one consistent shape. */
+function Notice({ icon, title, children, action }) {
+  return (
+    <div className="panel panel--narrow panel--center">
+      <span className="notice__icon" aria-hidden="true">{icon}</span>
+      <h2 className="panel__title">{title}</h2>
+      <p className="panel__sub">{children}</p>
+      <div className="actions actions--single">{action}</div>
+    </div>
+  )
+}
+
 function GiftScreen({ eligibility, onRetry, checking }) {
   const { score, gift, setGift, setStep, giftWheel, winnableGifts, reloadGifts, visitor } = useFlow()
   const [spinning, setSpinning] = useState(false)
@@ -52,19 +64,17 @@ function GiftScreen({ eligibility, onRetry, checking }) {
 
   if (score === 0) {
     return (
-      <div className="card center-narrow" style={{ textAlign: 'center' }}>
-        <h2 className="card__title">No rewards unlocked this time 😔</h2>
-        <p className="card__sub" style={{ margin: '6px auto 0' }}>
-          You'll need at least one correct answer to unlock a spin. Give it another go!
-        </p>
-        <button
-          className="btn btn--primary btn--lg"
-          style={{ marginTop: 22 }}
-          onClick={() => setStep(STEPS.QUIZINTRO)}
-        >
-          Try Again <span className="btn__arrow">→</span>
-        </button>
-      </div>
+      <Notice
+        icon="🔒"
+        title="So close!"
+        action={
+          <button className="btn btn--gold btn--xl" onClick={() => setStep(STEPS.QUIZINTRO)}>
+            Try new questions <span className="btn__arrow" aria-hidden="true">→</span>
+          </button>
+        }
+      >
+        You need at least one right answer to unlock the wheel. You'll get a fresh set of questions.
+      </Notice>
     )
   }
 
@@ -73,27 +83,25 @@ function GiftScreen({ eligibility, onRetry, checking }) {
 
   if (eligibility.status === 'already-won') {
     return (
-      <div className="card card--center center-narrow" style={{ textAlign: 'center' }}>
-        <h2 className="card__title">You’ve already won a prize</h2>
-        <p className="card__sub" style={{ margin: '6px auto 0' }}>
-          It looks like you’ve already claimed a prize. You’re welcome to take the quiz again, but only one prize can be claimed per person.
-        </p>
-        <button className="btn btn--primary" style={{ marginTop: 22 }} onClick={() => setStep(STEPS.LANDING)}>
-          Back to Home
-        </button>
-      </div>
+      <Notice
+        icon="🎟️"
+        title="You've already won"
+        action={<button className="btn btn--gold" onClick={() => setStep(STEPS.LANDING)}>Back to start</button>}
+      >
+        This mobile number has already claimed a prize. Thanks for playing again — it's one prize per person.
+      </Notice>
     )
   }
 
   if (eligibility.status === 'error') {
     return (
-      <div className="card card--center center-narrow" style={{ textAlign: 'center' }}>
-        <h2 className="card__title">Prize eligibility could not be checked</h2>
-        <p className="card__sub" style={{ margin: '6px auto 0' }}>{eligibility.error}</p>
-        <button className="btn btn--primary" style={{ marginTop: 22 }} onClick={onRetry}>
-          Try Again
-        </button>
-      </div>
+      <Notice
+        icon="📡"
+        title="Couldn't reach the prize desk"
+        action={<button className="btn btn--gold" onClick={onRetry}>Try again</button>}
+      >
+        {eligibility.error}
+      </Notice>
     )
   }
 
@@ -117,7 +125,7 @@ function GiftScreen({ eligibility, onRetry, checking }) {
     }
 
     // Another spin may have claimed the final unit while this wheel was
-    // animating. Refresh so exhausted rows disappear before the retry.
+    // animating. Refresh so exhausted rows drop out before the retry.
     await reloadGifts()
     setClaimError(
       claim.reason === 'outofstock'
@@ -130,83 +138,94 @@ function GiftScreen({ eligibility, onRetry, checking }) {
   const isConsolation = gift?.tier === 'consolation'
 
   return (
-    <div className="card card--center spin-card">
-      <div style={{ textAlign: 'center' }}>
-        <h2 className="card__title">Spin &amp; Win 🎡</h2>
-        <p className="card__sub" style={{ margin: '6px auto 0' }}>
-          {isSuper
-            ? 'Jackpot! You landed our rarest prize! 🌟'
-            : isConsolation
-            ? 'Thanks for spinning — better luck next time!'
-            : gift
-            ? 'Here’s what the wheel picked for you!'
-            : 'Spin the wheel to find out which reward is yours.'}
-        </p>
+    <div className="panel spin">
+      <div className="spin__wheel">
+        <Marquee lit={spinning || !!gift}>
+          {/* One pool for everyone — `winnable` only drops prizes that are
+              out of stock or withdrawn. One spin per visitor: `disabled`
+              stops a re-roll after stepping back from the next screen. */}
+          <SpinWheel
+            items={giftWheel}
+            winnable={winnableGifts}
+            spinning={spinning}
+            disabled={!!gift}
+            result={gift}
+            onSpinStart={onSpinStart}
+            onResult={onResult}
+          />
+        </Marquee>
       </div>
 
-      {/* One pool for everyone here — `winnable` only filters out prizes that
-          are out of stock or withdrawn. One spin per visitor: `disabled`
-          keeps them from re-rolling by stepping back from the next screen. */}
-      <SpinWheel
-        items={giftWheel}
-        winnable={winnableGifts}
-        spinning={spinning}
-        disabled={!!gift}
-        result={gift}
-        onSpinStart={onSpinStart}
-        onResult={onResult}
-      />
+      {/* Text, result and buttons sit beside the wheel on wide screens so a
+          768px-tall stall tablet never has to scroll to find Continue. */}
+      <div className="spin__side">
+        <header className="panel__head">
+          <span className="kicker">Step 03</span>
+          <h2 className="panel__title">
+            {isSuper ? 'JACKPOT!' : isConsolation ? 'Unlucky this time' : gift ? 'You won!' : 'Spin to win'}
+          </h2>
+          <p className="panel__sub">
+            {gift
+              ? isConsolation
+                ? 'The wheel didn’t land on a prize — thanks for playing!'
+                : 'Confirm your details next to get your prize ticket.'
+              : spinning
+              ? 'Round and round it goes…'
+              : 'Tap SPIN in the middle of the wheel.'}
+          </p>
+        </header>
 
-      {claimError && <p className="form__error" role="alert">{claimError}</p>}
-
-      <AnimatePresence mode="wait">
-        {gift ? (
-          <motion.div
-            key="result"
-            className={
-              isSuper ? 'spin-result spin-result--super'
-                : isConsolation ? 'spin-result spin-result--consolation'
-                : 'spin-result'
-            }
-            initial={{ opacity: 0, y: 14, scale: 0.94 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ type: 'spring', stiffness: 220, damping: 20 }}
-          >
-            <span className="spin-result__emoji">{gift.emoji}</span>
-            <div className="spin-result__text">
-              <span className="spin-result__label">
-                {isSuper ? 'Jackpot' : isConsolation ? 'This time' : 'You won'}
+        <AnimatePresence>
+          {gift && (
+            <motion.div
+              className={`prize ${isSuper ? 'prize--super' : ''} ${isConsolation ? 'prize--dud' : ''}`}
+              initial={{ opacity: 0, y: 16, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ type: 'spring', stiffness: 220, damping: 20 }}
+            >
+              <span className="prize__emoji">{gift.emoji}</span>
+              <span className="prize__text">
+                <span className="prize__label">{isConsolation ? 'Result' : isSuper ? 'Jackpot prize' : 'Your prize'}</span>
+                <span className="prize__title">{gift.title}</span>
+                {gift.desc && <span className="prize__desc">{gift.desc}</span>}
               </span>
-              <span className="spin-result__title">{gift.title}</span>
-              <span className="spin-result__desc">{gift.desc}</span>
-            </div>
-          </motion.div>
-        ) : (
-          <motion.p
-            key="hint"
-            className="spin-hint"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            {spinning ? 'Spinning…' : 'Tap SPIN in the centre of the wheel'}
-          </motion.p>
-        )}
-      </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-      <div className="form__actions">
-        <button className="btn btn--ghost" onClick={() => setStep(STEPS.COMPLETE)} disabled={spinning}>
-          Back
-        </button>
-        <button
-          className="btn btn--primary"
-          disabled={!gift || spinning}
-          onClick={() => setStep(STEPS.CONTACT)}
-        >
-          Continue <span className="btn__arrow">→</span>
-        </button>
+        {claimError && <p className="alert alert--bad" role="alert">{claimError}</p>}
+
+        <div className="actions">
+          <button className="btn btn--ghost" onClick={() => setStep(STEPS.COMPLETE)} disabled={spinning}>
+            Back
+          </button>
+          <button className="btn btn--gold" disabled={!gift || spinning} onClick={() => setStep(STEPS.CONTACT)}>
+            Continue <span className="btn__arrow" aria-hidden="true">→</span>
+          </button>
+        </div>
       </div>
+    </div>
+  )
+}
+
+/* Game-show bulbs around the wheel. They idle with a slow alternating glow
+   and chase faster while the wheel is spinning or has just paid out. */
+const BULBS = 28
+
+function Marquee({ lit, children }) {
+  const reduced = useReducedMotion()
+  return (
+    <div className={`marquee ${lit && !reduced ? 'marquee--lit' : ''}`}>
+      <div className="marquee__ring" aria-hidden="true">
+        {Array.from({ length: BULBS }).map((_, i) => (
+          <span
+            key={i}
+            className={`marquee__bulb ${i % 2 ? 'marquee__bulb--odd' : ''}`}
+            style={{ transform: `rotate(${(i * 360) / BULBS}deg) translateY(calc(var(--marquee-r) * -1))` }}
+          />
+        ))}
+      </div>
+      <div className="marquee__wheel">{children}</div>
     </div>
   )
 }

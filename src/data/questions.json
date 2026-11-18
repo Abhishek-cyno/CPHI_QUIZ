@@ -1,0 +1,563 @@
+[
+  {
+    "id": "cphi01",
+    "q": "Which drug is unsuitable for oral use mainly because of extensive first pass metabolism?",
+    "options": [
+      "Lidocaine",
+      "Atenolol",
+      "Amoxicillin",
+      "Metformin"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "cphi02",
+    "q": "Which of the following is a phase II (conjugation) reaction?",
+    "options": [
+      "Oxidation",
+      "Reduction",
+      "Hydrolysis",
+      "Glucuronidation"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "cphi03",
+    "q": "Which of the following is a beta-1 blocker?",
+    "options": [
+      "Propranolol",
+      "Labetolol",
+      "Metoprolol",
+      "Carvedilol"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "cphi04",
+    "q": "Which diuretic is most likely to raise serum lithium levels?",
+    "options": [
+      "Furosemide",
+      "Hydrochlorothiazide",
+      "Acetazolamide",
+      "Mannitol"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "cphi05",
+    "q": "A low angle of repose generally indicates:",
+    "options": [
+      "Poor Flow",
+      "Excellent Flow",
+      "High Moisture",
+      "Low Density"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "cphi06",
+    "q": "Autoclaving is most effective because it uses:",
+    "options": [
+      "Dry Heat",
+      "Ethylene Oxide",
+      "Moist Heat under Pressure",
+      "UV Radiation"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "cphi07",
+    "q": "Which carrier system is widely used for targeted drug delivery?",
+    "options": [
+      "Liposome",
+      "Granule",
+      "Pellet",
+      "Sachet"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "cphi08",
+    "q": "Phase I clinical trials mainly evaluate:",
+    "options": [
+      "Efficacy",
+      "Safety and Tolerability",
+      "Marketing Potential",
+      "Cost Effectiveness"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "cphi09",
+    "q": "Which natural compound led to the development of the anti-malarial drug artemisinin?",
+    "options": [
+      "Artemisia annua",
+      "Digitalis purpurea",
+      "Ginkgo biloba",
+      "Aloe vera"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "cphi10",
+    "q": "Which test evaluates tablet resistance to abrasion?",
+    "options": [
+      "Hardness Test",
+      "Friability Test",
+      "Disintegration Test",
+      "Weight Variation Test"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "cphi11",
+    "q": "Lyophilization is commonly known as:",
+    "options": [
+      "Dry Granulation",
+      "Spray Drying",
+      "Freeze Drying",
+      "Fluid Bed Drying"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "cphi12",
+    "q": "Fluidized Bed Dryer is mainly used for:",
+    "options": [
+      "Sterilization",
+      "Drying Granules",
+      "Filling Capsules",
+      "Dissolution Testing"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "cphi13",
+    "q": "Which route of administration avoids first-pass metabolism?",
+    "options": [
+      "Oral tablet",
+      "Chewable tablet",
+      "Enteral tube",
+      "Sublingual"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "cphi14",
+    "q": "The bioavailability of a drug given intravenously is:",
+    "options": [
+      "0%",
+      "50%",
+      "75%",
+      "100%"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "cphi15",
+    "q": "Which of the following is a prodrug?",
+    "options": [
+      "Captopril",
+      "Lisinopril",
+      "Enalapril",
+      "Ramiprilat"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "cphi16",
+    "q": "Idiosyncrasy refers to:",
+    "options": [
+      "A dose- related excess effect",
+      "Tolerance to a drug",
+      "A genetically determined abnormal reaction",
+      "A withdrawal reaction"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "cphi17",
+    "q": "Salbutamol acts mainly on which receptor?",
+    "options": [
+      "β2",
+      "α1",
+      "M3",
+      "β1"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "cphi18",
+    "q": "Which drug is commonly used for motion sickness?",
+    "options": [
+      "Hyoscine (scopolamine)",
+      "Neostigmine",
+      "Prazosin",
+      "Salbutamol"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "cphi19",
+    "q": "The antidote for opioid overdose is:",
+    "options": [
+      "Flumazenil",
+      "Atropine",
+      "Naloxone",
+      "Protamine"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "cphi20",
+    "q": "A common side effect of amlodipine is:",
+    "options": [
+      "Dry cough",
+      "Pedal edema",
+      "Bradycardia",
+      "Hyperkalemia"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "cphi21",
+    "q": "Digoxin is used in the treatment of:",
+    "options": [
+      "Hypertensive emergency",
+      "Atrial fibrillation",
+      "Asthma",
+      "Gout"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "cphi22",
+    "q": "Spironolactone is a:",
+    "options": [
+      "Loop diuretic",
+      "Thiazide diuretic",
+      "Potassium- sparing diuretic",
+      "Osmotic diuretic"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "cphi23",
+    "q": "ACE inhibitors are contraindicated in pregnancy because they can cause:",
+    "options": [
+      "Cleft lip",
+      "Fetal renal damage",
+      "Gray baby syndrome",
+      "Ototoxicity in the mother"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "cphi24",
+    "q": "Theophylline has:",
+    "options": [
+      "A wide therapeutic index",
+      "A narrow therapeutic index",
+      "No hepatic metabolism",
+      "No known toxicity"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "cphi25",
+    "q": "The antidote for organophosphate (muscarinic) poisoning is:",
+    "options": [
+      "Naloxone",
+      "Atropine",
+      "Protamine",
+      "Vitamin K"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "cphi26",
+    "q": "Which Act regulates the pharmacy profession in India?",
+    "options": [
+      "Drugs and Cosmetics Act,1940",
+      "Pharmacy Act, 1948",
+      "NDPS Act, 1985",
+      "DPCO, 2013"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "cphi27",
+    "q": "Under Indian regulations, Schedule H drugs are:",
+    "options": [
+      "OTC drugs",
+      "Veterinary drugs only",
+      "Prescription drugs",
+      "Herbal medicines"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "cphi28",
+    "q": "ALCOA principles are most closely associated with:",
+    "options": [
+      "Packaging Standards",
+      "Data Integrity",
+      "Clinical Trials",
+      "Pharmacovigilance"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "cphi29",
+    "q": "A spurious drug is one that:",
+    "options": [
+      "Has expired",
+      "Is counterfeit or falsely represented",
+      "Is manufactured overseas",
+      "Is sold online"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "cphi30",
+    "q": "Which international guideline focuses on Pharmaceutical Quality Systems?",
+    "options": [
+      "ICH Q8",
+      "ICH Q9",
+      "ICH Q10",
+      "ICH E6"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "cphi31",
+    "q": "Which authority is responsible for pharmaceutical price regulation in India?",
+    "options": [
+      "CDSCO",
+      "NPPA",
+      "PCI",
+      "DPCO"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "cphi32",
+    "q": "Separation of a tablet into two or more horizontal layers is known as:",
+    "options": [
+      "Chipping",
+      "Lamination",
+      "Sticking",
+      "Binding"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "cphi33",
+    "q": "Air entrapment during compression is a major cause of:",
+    "options": [
+      "Capping",
+      "Mottling",
+      "Picking",
+      "Staining"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "cphi34",
+    "q": "A defect causing adherence of tablet material to die wall due to inadequate lubrication is:",
+    "options": [
+      "Binding",
+      "Lamination",
+      "Chipping",
+      "Mottling"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "cphi35",
+    "q": "Phenolphthalein changes color in which pH range?",
+    "options": [
+      "1.2 - 2.8",
+      "3.1 - 4.4",
+      "8.2 - 10.0",
+      "11 - 13"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "cphi36",
+    "q": "Which classification system classifies drugs based on solubility and permeability?",
+    "options": [
+      "ATC Classification",
+      "BCS",
+      "ICD",
+      "USP"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "cphi37",
+    "q": "Which test is used for the identification of proteins?",
+    "options": [
+      "Molisch Test",
+      "Biuret Test",
+      "Benedict's Test",
+      "Salkowski Test"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "cphi38",
+    "q": "Benedict's test is used for detection of:",
+    "options": [
+      "Proteins",
+      "Reducing sugars",
+      "Lipids",
+      "Nucleic acids"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "cphi39",
+    "q": "Sudan III stain is used for detection of:",
+    "options": [
+      "DNA",
+      "Proteins",
+      "Lipids",
+      "Vitamins"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "cphi40",
+    "q": "Which of the following pairs is correctly matched?",
+    "options": [
+      "Biuret - Protein",
+      "Benedict - Lipid",
+      "Sudan III - DNA",
+      "Molisch - Sterol"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "cphi41",
+    "q": "Young's formula is:",
+    "options": [
+      "Age/(Age+12) × Adult Dose",
+      "Weight/70 × Adult Dose",
+      "Age × Dose",
+      "Dose/Weight"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "cphi42",
+    "q": "Which pharmacokinetic parameter is most important when calculating a loading dose?",
+    "options": [
+      "Clearance",
+      "Volume of Distribution",
+      "Half-life",
+      "Bioequivalence"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "cphi43",
+    "q": "Which formula is most commonly used in hospital practice for quick liquid dose calculation?",
+    "options": [
+      "Young's Formula",
+      "Clark's Rule",
+      "Desired Dose × Volume Available / Dose on Hand",
+      "Fried's Formula"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "cphi44",
+    "q": "The area under the plasma concentration-time curve (AUC) is a measure of:",
+    "options": [
+      "Drug toxicity",
+      "Extent of absorption",
+      "Drug color",
+      "Drug stability"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "cphi45",
+    "q": "Metoprolol is commonly cited as an example of:",
+    "options": [
+      "BCS Class I",
+      "BCS Class II",
+      "BCS Class III",
+      "BCS Class IV"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "cphi46",
+    "q": "The volume of distribution (Vd) indicates:",
+    "options": [
+      "Drug manufacturing volume",
+      "Extent of drug distribution in body tissues",
+      "Dosage form volume",
+      "Batch size"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "cphi47",
+    "q": "Which dosage form strategy is most commonly used to improve the bioavailability of poorly soluble drugs?",
+    "options": [
+      "Increase particle size",
+      "Solid Dispersion",
+      "Increase coating thickness",
+      "Use larger tablets"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "cphi48",
+    "q": "Aspirin works primarily by inhibiting:",
+    "options": [
+      "Histamine",
+      "Cyclooxygenase (COX)",
+      "ACE",
+      "Dopamine"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "cphi49",
+    "q": "Particle size reduction generally:",
+    "options": [
+      "Reduces dissolution",
+      "Increases dissolution",
+      "Reduces permeability",
+      "Decreases absorption"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "cphi50",
+    "q": "Schedule M deals with:",
+    "options": [
+      "Clinical Trials",
+      "GMP Requirements",
+      "Pricing",
+      "Labeling"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "cphi51",
+    "q": "Titanium dioxide is primarily used as:",
+    "options": [
+      "Flavoring agent",
+      "Opacifier",
+      "Lubricant",
+      "Preservative"
+    ],
+    "answer": 1
+  }
+]

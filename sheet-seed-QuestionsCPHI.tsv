@@ -1,0 +1,52 @@
+id	question	option1	option2	option3	option4	answer
+cphi01	Which drug is unsuitable for oral use mainly because of extensive first pass metabolism?	Lidocaine	Atenolol	Amoxicillin	Metformin	0
+cphi02	Which of the following is a phase II (conjugation) reaction?	Oxidation	Reduction	Hydrolysis	Glucuronidation	3
+cphi03	Which of the following is a beta-1 blocker?	Propranolol	Labetolol	Metoprolol	Carvedilol	2
+cphi04	Which diuretic is most likely to raise serum lithium levels?	Furosemide	Hydrochlorothiazide	Acetazolamide	Mannitol	1
+cphi05	A low angle of repose generally indicates:	Poor Flow	Excellent Flow	High Moisture	Low Density	1
+cphi06	Autoclaving is most effective because it uses:	Dry Heat	Ethylene Oxide	Moist Heat under Pressure	UV Radiation	2
+cphi07	Which carrier system is widely used for targeted drug delivery?	Liposome	Granule	Pellet	Sachet	0
+cphi08	Phase I clinical trials mainly evaluate:	Efficacy	Safety and Tolerability	Marketing Potential	Cost Effectiveness	1
+cphi09	Which natural compound led to the development of the anti-malarial drug artemisinin?	Artemisia annua	Digitalis purpurea	Ginkgo biloba	Aloe vera	0
+cphi10	Which test evaluates tablet resistance to abrasion?	Hardness Test	Friability Test	Disintegration Test	Weight Variation Test	1
+cphi11	Lyophilization is commonly known as:	Dry Granulation	Spray Drying	Freeze Drying	Fluid Bed Drying	2
+cphi12	Fluidized Bed Dryer is mainly used for:	Sterilization	Drying Granules	Filling Capsules	Dissolution Testing	1
+cphi13	Which route of administration avoids first-pass metabolism?	Oral tablet	Chewable tablet	Enteral tube	Sublingual	3
+cphi14	The bioavailability of a drug given intravenously is:	0%	50%	75%	100%	3
+cphi15	Which of the following is a prodrug?	Captopril	Lisinopril	Enalapril	Ramiprilat	2
+cphi16	Idiosyncrasy refers to:	A dose- related excess effect	Tolerance to a drug	A genetically determined abnormal reaction	A withdrawal reaction	2
+cphi17	Salbutamol acts mainly on which receptor?	β2	α1	M3	β1	0
+cphi18	Which drug is commonly used for motion sickness?	Hyoscine (scopolamine)	Neostigmine	Prazosin	Salbutamol	0
+cphi19	The antidote for opioid overdose is:	Flumazenil	Atropine	Naloxone	Protamine	2
+cphi20	A common side effect of amlodipine is:	Dry cough	Pedal edema	Bradycardia	Hyperkalemia	1
+cphi21	Digoxin is used in the treatment of:	Hypertensive emergency	Atrial fibrillation	Asthma	Gout	1
+cphi22	Spironolactone is a:	Loop diuretic	Thiazide diuretic	Potassium- sparing diuretic	Osmotic diuretic	2
+cphi23	ACE inhibitors are contraindicated in pregnancy because they can cause:	Cleft lip	Fetal renal damage	Gray baby syndrome	Ototoxicity in the mother	1
+cphi24	Theophylline has:	A wide therapeutic index	A narrow therapeutic index	No hepatic metabolism	No known toxicity	1
+cphi25	The antidote for organophosphate (muscarinic) poisoning is:	Naloxone	Atropine	Protamine	Vitamin K	1
+cphi26	Which Act regulates the pharmacy profession in India?	Drugs and Cosmetics Act,1940	Pharmacy Act, 1948	NDPS Act, 1985	DPCO, 2013	1
+cphi27	Under Indian regulations, Schedule H drugs are:	OTC drugs	Veterinary drugs only	Prescription drugs	Herbal medicines	2
+cphi28	ALCOA principles are most closely associated with:	Packaging Standards	Data Integrity	Clinical Trials	Pharmacovigilance	1
+cphi29	A spurious drug is one that:	Has expired	Is counterfeit or falsely represented	Is manufactured overseas	Is sold online	1
+cphi30	Which international guideline focuses on Pharmaceutical Quality Systems?	ICH Q8	ICH Q9	ICH Q10	ICH E6	2
+cphi31	Which authority is responsible for pharmaceutical price regulation in India?	CDSCO	NPPA	PCI	DPCO	1
+cphi32	Separation of a tablet into two or more horizontal layers is known as:	Chipping	Lamination	Sticking	Binding	1
+cphi33	Air entrapment during compression is a major cause of:	Capping	Mottling	Picking	Staining	0
+cphi34	A defect causing adherence of tablet material to die wall due to inadequate lubrication is:	Binding	Lamination	Chipping	Mottling	0
+cphi35	Phenolphthalein changes color in which pH range?	1.2 - 2.8	3.1 - 4.4	8.2 - 10.0	11 - 13	2
+cphi36	Which classification system classifies drugs based on solubility and permeability?	ATC Classification	BCS	ICD	USP	1
+cphi37	Which test is used for the identification of proteins?	Molisch Test	Biuret Test	Benedict's Test	Salkowski Test	1
+cphi38	Benedict's test is used for detection of:	Proteins	Reducing sugars	Lipids	Nucleic acids	1
+cphi39	Sudan III stain is used for detection of:	DNA	Proteins	Lipids	Vitamins	2
+cphi40	Which of the following pairs is correctly matched?	Biuret - Protein	Benedict - Lipid	Sudan III - DNA	Molisch - Sterol	0
+cphi41	Young's formula is:	Age/(Age+12) × Adult Dose	Weight/70 × Adult Dose	Age × Dose	Dose/Weight	0
+cphi42	Which pharmacokinetic parameter is most important when calculating a loading dose?	Clearance	Volume of Distribution	Half-life	Bioequivalence	1
+cphi43	Which formula is most commonly used in hospital practice for quick liquid dose calculation?	Young's Formula	Clark's Rule	Desired Dose × Volume Available / Dose on Hand	Fried's Formula	2
+cphi44	The area under the plasma concentration-time curve (AUC) is a measure of:	Drug toxicity	Extent of absorption	Drug color	Drug stability	1
+cphi45	Metoprolol is commonly cited as an example of:	BCS Class I	BCS Class II	BCS Class III	BCS Class IV	0
+cphi46	The volume of distribution (Vd) indicates:	Drug manufacturing volume	Extent of drug distribution in body tissues	Dosage form volume	Batch size	1
+cphi47	Which dosage form strategy is most commonly used to improve the bioavailability of poorly soluble drugs?	Increase particle size	Solid Dispersion	Increase coating thickness	Use larger tablets	1
+cphi48	Aspirin works primarily by inhibiting:	Histamine	Cyclooxygenase (COX)	ACE	Dopamine	1
+cphi49	Particle size reduction generally:	Reduces dissolution	Increases dissolution	Reduces permeability	Decreases absorption	1
+cphi50	Schedule M deals with:	Clinical Trials	GMP Requirements	Pricing	Labeling	1
+cphi51	Titanium dioxide is primarily used as:	Flavoring agent	Opacifier	Lubricant	Preservative	1

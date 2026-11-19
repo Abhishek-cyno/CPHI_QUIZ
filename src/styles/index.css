@@ -375,6 +375,9 @@ img { display: block; max-width: 100%; }
 
 /* ---- Forms ---- */
 .form { display: flex; flex-direction: column; gap: 18px; }
+/* Two short fields side by side, so adding them doesn't push the form's
+   Continue button below the fold on a stall tablet. */
+.form__pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .field { display: flex; flex-direction: column; gap: 8px; }
 .field__label {
   font-size: 13px;
@@ -1004,7 +1007,8 @@ select.field__input option { background: var(--bg-2); color: var(--text); }
   line-height: 1.15;
   letter-spacing: -0.02em;
 }
-.ticket__meta { display: flex; gap: 32px; }
+.ticket__meta { display: flex; flex-wrap: wrap; gap: 12px 32px; }
+.ticket__meta > div { min-width: 0; }
 .ticket__meta dt {
   font-family: var(--mono);
   font-size: 10.5px;
@@ -1013,7 +1017,7 @@ select.field__input option { background: var(--bg-2); color: var(--text); }
   text-transform: uppercase;
   color: rgba(12, 60, 84, 0.55);
 }
-.ticket__meta dd { font-family: var(--display); font-weight: 700; font-size: 16px; }
+.ticket__meta dd { font-family: var(--display); font-weight: 700; font-size: 16px; overflow-wrap: anywhere; }
 
 .ticket__stub .ticket__label { color: rgba(27, 18, 0, 0.6); }
 .ticket__ref {
@@ -1108,6 +1112,7 @@ select.field__input option { background: var(--bg-2); color: var(--text); }
   .btn--xl { width: 100%; }
 
   .phone-input { grid-template-columns: 100px 1fr; }
+  .form__pair { grid-template-columns: 1fr; gap: 18px; }
 
   .marquee { --bulb: 9px; --marquee-r: calc(50cqi - 10px); }
   .marquee__wheel { inset: 22px; }

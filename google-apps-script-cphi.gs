@@ -94,10 +94,13 @@ var GIFTS_CACHE_TTL = 120;
 var ENTRY_HEADERS = [
   'Entered At', 'Ref', 'Status', 'Name', 'Email', 'Phone',
   'Score', 'Total', 'Percent', 'Prize', 'Answers (JSON)',
+  // Added after launch, so they go on the END: rows already in the tab keep
+  // every column where it was, and setupSheets just extends the header.
+  'Organization', 'Designation',
 ];
 
 // Column indexes into ENTRY_HEADERS, 0-based, used when reading rows back.
-var COL = { ref: 1, status: 2, name: 3, email: 4, phone: 5, prize: 9 };
+var COL = { ref: 1, status: 2, name: 3, email: 4, phone: 5, prize: 9, organization: 11, designation: 12 };
 
 // ============================================================
 //  Web endpoints
@@ -299,8 +302,9 @@ function registerVisitor(data) {
     var ref = existing ? existing.ref : makeRef();
     var row = [
       new Date(), ref, 'registered',
-      data.name || '', data.email || '', sheetPhone(data.phone),
+      sheetText(data.name), sheetText(data.email), sheetPhone(data.phone),
       '', '', '', '', '[]',
+      sheetText(data.organization), sheetText(data.designation),
     ];
 
     if (existing) {
@@ -362,8 +366,9 @@ function claimGift(data) {
 
       var claimRow = [
         new Date(), prior ? prior.ref : makeRef(), 'prize-claimed',
-        data.name || '', data.email || '', sheetPhone(data.phone),
+        sheetText(data.name), sheetText(data.email), sheetPhone(data.phone),
         '', '', '', title, '[]',
+        sheetText(data.organization), sheetText(data.designation),
       ];
       if (prior) {
         entriesSheet().getRange(prior.row, 1, 1, claimRow.length).setValues([claimRow]);
@@ -411,10 +416,11 @@ function submitEntry(data) {
 
     var row = [
       new Date(), ref, 'entered',
-      data.name || '', data.email || '', sheetPhone(data.phone),
+      sheetText(data.name), sheetText(data.email), sheetPhone(data.phone),
       data.score, data.total, data.percent,
-      data.gift || (existing ? existing.prize : '') || '',
+      sheetText(data.gift || (existing ? existing.prize : '') || ''),
       JSON.stringify(data.answers || []),
+      sheetText(data.organization), sheetText(data.designation),
     ];
 
     if (repeat) {
@@ -459,7 +465,11 @@ function submitEntry(data) {
 function validate(data) {
   if (!data) return 'Empty request.';
   if (!String(data.name || '').trim()) return 'Name is required.';
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(data.email || '').trim())) return 'A valid email is required.';
+  if (!String(data.organization || '').trim()) return 'Organization is required.';
+  if (!String(data.designation || '').trim()) return 'Designation is required.';
+  // Email is optional. Only a value that IS given has to look like one.
+  var email = String(data.email || '').trim();
+  if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return 'That email address does not look right.';
   if (digitsOnly(data.phone).length < 10) return 'A valid WhatsApp number is required.';
   return null;
 }
@@ -514,7 +524,12 @@ function sendEntryEmails(data, ref) {
   var brand = settings.brandName || 'Eqova Medicare';
   var event = settings.cphiEventName || 'CPHI';
 
-  MailApp.sendEmail({
+  // Email is optional, so a visitor who left it blank simply gets no
+  // confirmation — their ticket on screen is the record. Logged so an empty
+  // inbox is never mistaken for the quota or deployment problems.
+  if (!String(data.email || '').trim()) {
+    console.info('No email for ' + ref + ' — skipping the visitor confirmation.');
+  } else MailApp.sendEmail({
     to: data.email,
     name: brand,
     subject: 'Your ' + event + ' quiz entry is confirmed — ' + ref,
@@ -546,7 +561,9 @@ function sendEntryEmails(data, ref) {
         '<table cellpadding="6" style="border-collapse:collapse;font:14px system-ui">',
         row('Reference', ref),
         row('Name', data.name),
-        row('Email', data.email),
+        row('Organization', data.organization),
+        row('Designation', data.designation),
+        row('Email', data.email || '—'),
         row('WhatsApp', data.phone),
         row('Quiz score', data.score + '/' + data.total + ' (' + data.percent + '%)'),
         row('Prize to hand over', data.gift || '—'),
@@ -608,6 +625,8 @@ function notifyPabbly(data, ref) {
     phone: waNumber(data.phone),   // 919127072000 — what Chatflow wants
     phoneRaw: String(data.phone || ''),
     email: data.email || '',
+    organization: data.organization || '',
+    designation: data.designation || '',
     score: data.score,
     total: data.total,
     percent: data.percent,
@@ -701,6 +720,11 @@ function setupSheets() {
   } else {
     Logger.log('The ' + ENTRIES_TAB + ' tab already exists — data left as-is.');
   }
+
+  // Rewrite the header row in full. The original columns are unchanged, so
+  // on a tab made before Organization/Designation existed this only adds the
+  // two new headings on the end; no data row is touched.
+  sheet.getRange(1, 1, 1, ENTRY_HEADERS.length).setValues([ENTRY_HEADERS]).setFontWeight('bold');
 
   // Outside the if, so it is applied even to a tab someone created by hand
   // before running this — which is exactly the case that used to slip
@@ -815,6 +839,20 @@ function digitsOnly(value) {
  */
 function sheetPhone(value) {
   return digitsOnly(value);
+}
+
+/**
+ * Free text typed by the public (name, email, organization, designation)
+ * goes straight into the sheet, and Sheets runs anything beginning with
+ * "=", "+", "-" or "@" as a formula — so "=IMPORTXML(...)" typed as an
+ * organization would execute in your spreadsheet, and "+ QA Lead" would
+ * land as #ERROR!. A leading apostrophe is Sheets' own "this is text"
+ * marker: it is stored, never displayed, and the cell reads back exactly as
+ * typed.
+ */
+function sheetText(value) {
+  var text = String(value == null ? '' : value).trim();
+  return /^[=+\-@]/.test(text) ? "'" + text : text;
 }
 
 /**

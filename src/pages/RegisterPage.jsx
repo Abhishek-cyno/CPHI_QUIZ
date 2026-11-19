@@ -8,17 +8,20 @@ import { splitPhone, joinPhone } from '../utils/phone.js'
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 
 /**
- * Name, mobile and email — that is the whole form. Every question comes
- * from one shared bank, so there is nothing to branch on and nothing more
- * to ask. Email is collected here (not at the end) so the entry is complete
- * from the first submit, and the screen after the wheel is a confirmation
- * rather than a second round of typing.
+ * Name, mobile, organization, designation, and an optional email.
+ *
+ * Every question comes from one shared bank, so nothing here changes what
+ * the visitor is asked — organization and designation are for the stall
+ * team's follow-up. Email is optional: the on-screen ticket is the visitor's
+ * real record, and a confirmation mail is a bonus for those who want one.
  */
 export default function RegisterPage() {
   const { setStep, visitor, setVisitor } = useFlow()
   const [name, setName] = useState(visitor.name)
   const [countryCode, setCountryCode] = useState(() => splitPhone(visitor.mobile).code)
   const [mobile, setMobile] = useState(() => splitPhone(visitor.mobile).number)
+  const [organization, setOrganization] = useState(visitor.organization)
+  const [designation, setDesignation] = useState(visitor.designation)
   const [email, setEmail] = useState(visitor.email)
   const [error, setError] = useState('')
 
@@ -26,12 +29,17 @@ export default function RegisterPage() {
     e.preventDefault()
     if (!name.trim()) return setError('Please enter your name.')
     if (mobile.length !== 10) return setError('Please enter a valid 10-digit mobile number.')
-    if (!EMAIL_RE.test(email.trim())) return setError('Please enter a valid email address.')
+    if (!organization.trim()) return setError('Please enter your organization.')
+    if (!designation.trim()) return setError('Please enter your designation.')
+    // Optional, but if something is typed it has to be an address.
+    if (email.trim() && !EMAIL_RE.test(email.trim())) return setError('That email address doesn’t look right — fix it or leave it blank.')
     setError('')
 
     const details = {
       name: capitalizeName(name).trim(),
       mobile: joinPhone(countryCode, mobile),
+      organization: organization.trim(),
+      designation: designation.trim(),
       email: email.trim(),
     }
     setVisitor(details)
@@ -48,7 +56,7 @@ export default function RegisterPage() {
       <header className="panel__head">
         <span className="kicker">Step 01</span>
         <h2 className="panel__title">Who's playing?</h2>
-        <p className="panel__sub">We use these to send your confirmation and hand over your prize.</p>
+        <p className="panel__sub">So we know who to hand your prize to.</p>
       </header>
 
       <form className="form" onSubmit={onSubmit} noValidate>
@@ -76,8 +84,36 @@ export default function RegisterPage() {
           onNumberChange={setMobile}
         />
 
+        <div className="form__pair">
+          <label className="field">
+            <span className="field__label">Organization</span>
+            <input
+              className="field__input"
+              type="text"
+              placeholder="Company or institute"
+              value={organization}
+              onChange={(e) => setOrganization(e.target.value)}
+              autoComplete="organization"
+            />
+          </label>
+
+          <label className="field">
+            <span className="field__label">Designation</span>
+            <input
+              className="field__input"
+              type="text"
+              placeholder="e.g. QA Manager"
+              value={designation}
+              onChange={(e) => setDesignation(e.target.value)}
+              autoComplete="organization-title"
+            />
+          </label>
+        </div>
+
         <label className="field">
-          <span className="field__label">Email</span>
+          <span className="field__label">
+            Email <span className="field__hint">optional — for a confirmation</span>
+          </span>
           <input
             className="field__input"
             type="email"

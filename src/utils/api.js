@@ -158,6 +158,8 @@ export async function registerVisitor(visitor) {
       name: visitor?.name || '',
       phone: visitor?.mobile || '',
       email: visitor?.email || '',
+      organization: visitor?.organization || '',
+      designation: visitor?.designation || '',
     })
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     return await res.json()
@@ -182,6 +184,8 @@ export async function claimGift(giftId, visitor) {
       name: visitor?.name || '',
       phone: visitor?.mobile || '',
       email: visitor?.email || '',
+      organization: visitor?.organization || '',
+      designation: visitor?.designation || '',
     })
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     return await res.json()

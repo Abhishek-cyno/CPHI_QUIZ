@@ -43,6 +43,12 @@ export default function ThankYouPage() {
               <dt>Name</dt>
               <dd>{visitor.name || '—'}</dd>
             </div>
+            {visitor.organization && (
+              <div>
+                <dt>Organization</dt>
+                <dd>{visitor.organization}</dd>
+              </div>
+            )}
             <div>
               <dt>Score</dt>
               <dd>{score}/{questions.length}</dd>
@@ -59,8 +65,11 @@ export default function ThankYouPage() {
         </div>
       </motion.article>
 
+      {/* Email is optional — only promise a copy when there's somewhere to send it. */}
       <p className="finale__note">
-        A copy is on its way to <strong>{entry.email || visitor.email}</strong>.
+        {entry.email
+          ? <>A copy is on its way to <strong>{entry.email}</strong>.</>
+          : <>No email given — take a photo of this ticket to keep it.</>}
       </p>
 
       <button className="btn btn--gold btn--xl" onClick={reset}>

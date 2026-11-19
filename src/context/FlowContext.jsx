@@ -7,7 +7,7 @@ import bundledQuestions from '../data/questions.json'
 
 const FlowContext = createContext(null)
 
-const EMPTY_VISITOR = { name: '', mobile: '', email: '' }
+const EMPTY_VISITOR = { name: '', mobile: '', email: '', organization: '', designation: '' }
 const EMPTY_ENTRY = { ref: '', email: '', phone: '' }
 const EMPTY_GIFTS = { superpremium: [], premium: [], standard: [], consolation: [] }
 

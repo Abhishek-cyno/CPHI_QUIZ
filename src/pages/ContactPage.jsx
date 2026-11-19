@@ -19,6 +19,8 @@ export default function ContactPage() {
   const { visitor, gift, score, questions, answers, setEntry, setStep } = useFlow()
 
   const [name, setName] = useState(visitor.name || '')
+  const [organization, setOrganization] = useState(visitor.organization || '')
+  const [designation, setDesignation] = useState(visitor.designation || '')
   const [email, setEmail] = useState(visitor.email || '')
   const [phone, setPhone] = useState(visitor.mobile || '')
   const [submitting, setSubmitting] = useState(false)
@@ -27,7 +29,9 @@ export default function ContactPage() {
   async function onConfirm(e) {
     e.preventDefault()
     if (!name.trim()) return setFormError('Please enter your name.')
-    if (!EMAIL_RE.test(email.trim())) return setFormError('Please enter a valid email address.')
+    if (!organization.trim()) return setFormError('Please enter your organization.')
+    if (!designation.trim()) return setFormError('Please enter your designation.')
+    if (email.trim() && !EMAIL_RE.test(email.trim())) return setFormError('That email address doesn’t look right — fix it or leave it blank.')
     if (phone.replace(/\D/g, '').length < 10) return setFormError('Please enter a valid WhatsApp number.')
 
     setFormError('')
@@ -38,6 +42,8 @@ export default function ContactPage() {
       name: capitalizeName(name).trim(),
       email: email.trim(),
       phone: phone.trim(),
+      organization: organization.trim(),
+      designation: designation.trim(),
       score,
       total,
       percent: total ? Math.round((score / total) * 100) : 0,
@@ -56,7 +62,8 @@ export default function ContactPage() {
     setFormError(result.error || 'Something went wrong. Please try again.')
   }
 
-  const ready = name.trim() && email.trim() && phone.trim()
+  // Email is optional, so it is deliberately not part of this check.
+  const ready = name.trim() && phone.trim() && organization.trim() && designation.trim()
 
   return (
     <div className="panel panel--narrow">
@@ -65,7 +72,7 @@ export default function ContactPage() {
       <header className="panel__head">
         <span className="kicker">Step 04</span>
         <h2 className="panel__title">Check your details</h2>
-        <p className="panel__sub">Your prize ticket and confirmation email go to these. Fix anything that's off.</p>
+        <p className="panel__sub">These go on your prize ticket. Fix anything that's off.</p>
       </header>
 
       {gift && (
@@ -92,11 +99,38 @@ export default function ContactPage() {
           />
         </label>
 
+        <div className="form__pair">
+          <label className="field">
+            <span className="field__label">Organization</span>
+            <input
+              className="field__input"
+              type="text"
+              value={organization}
+              onChange={(e) => setOrganization(e.target.value)}
+              autoComplete="organization"
+            />
+          </label>
+
+          <label className="field">
+            <span className="field__label">Designation</span>
+            <input
+              className="field__input"
+              type="text"
+              value={designation}
+              onChange={(e) => setDesignation(e.target.value)}
+              autoComplete="organization-title"
+            />
+          </label>
+        </div>
+
         <label className="field">
-          <span className="field__label">Email</span>
+          <span className="field__label">
+            Email <span className="field__hint">optional — for a confirmation</span>
+          </span>
           <input
             className="field__input"
             type="email"
+            placeholder="you@company.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             autoComplete="email"

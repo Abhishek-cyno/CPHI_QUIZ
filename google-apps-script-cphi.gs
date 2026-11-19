@@ -492,6 +492,7 @@ function findEntry(email, phone) {
   // Legacy rows hold a broken formula rather than text — see
   // phoneDigitsFromSheet for why the formula text is worth reading.
   var phoneFormulas = sheet.getRange(2, COL.phone + 1, lastRow - 1, 1).getFormulas();
+  var match = null;
 
   for (var i = 0; i < rows.length; i++) {
     var r = rows[i];
@@ -502,17 +503,30 @@ function findEntry(email, phone) {
     var rowPhone = phoneDigitsFromSheet(r[COL.phone], phoneFormulas[i][0]);
 
     if ((normEmail && rowEmail === normEmail) || (normPhone && rowPhone === normPhone)) {
-      return {
+      var candidate = {
         row: i + 2,
         ref: r[COL.ref],
         status: status,
         name: String(r[COL.name] || ''),
         prize: String(r[COL.prize] || ''),
       };
+      // Normally one visitor has one row, but duplicates do happen (a row
+      // that was invisible to this lookup, a sheet edited by hand). Taking
+      // the FIRST match would hand back a bare 'registered' row while a
+      // later row records the prize already won — and the one-prize check
+      // would wave that visitor through for a second spin. So keep looking
+      // and return the row that got furthest.
+      if (!match || entryProgress(candidate) > entryProgress(match)) match = candidate;
     }
   }
 
-  return null;
+  return match;
+}
+
+/** How far a row got: entered > prize-claimed > registered, plus one for a prize. */
+function entryProgress(row) {
+  var rank = { registered: 1, 'prize-claimed': 2, entered: 3 }[row.status] || 0;
+  return rank + (String(row.prize || '').trim() ? 1 : 0);
 }
 
 // ============================================================
@@ -721,10 +735,20 @@ function setupSheets() {
     Logger.log('The ' + ENTRIES_TAB + ' tab already exists — data left as-is.');
   }
 
-  // Rewrite the header row in full. The original columns are unchanged, so
-  // on a tab made before Organization/Designation existed this only adds the
-  // two new headings on the end; no data row is touched.
+  // Make sure row 1 is the header, WITHOUT ever writing over data. Three cases:
+  //  - row 1 already starts with the header: rewrite it in full, which on a
+  //    tab made before Organization/Designation existed just adds those two;
+  //  - row 1 is empty (a fresh hand-made tab): write the header into it;
+  //  - row 1 holds DATA (a hand-made tab that took entries before this ever
+  //    ran, so the first entry landed where the header belongs): insert a new
+  //    row above it, so that entry moves down to row 2 intact.
+  var firstCell = String(sheet.getRange(1, 1).getDisplayValue() || '').trim();
+  if (firstCell && firstCell !== ENTRY_HEADERS[0]) {
+    sheet.insertRowBefore(1);
+    Logger.log('Row 1 held an entry, not a header — inserted a header row above it.');
+  }
   sheet.getRange(1, 1, 1, ENTRY_HEADERS.length).setValues([ENTRY_HEADERS]).setFontWeight('bold');
+  sheet.setFrozenRows(1);
 
   // Outside the if, so it is applied even to a tab someone created by hand
   // before running this — which is exactly the case that used to slip

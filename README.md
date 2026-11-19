@@ -1,7 +1,7 @@
 # Eqova Medicare — CPHI Quiz
 
-A stall quiz for CPHI: three random pharma questions, a prize wheel, done in under
-a minute. Built from the same bones as the doctor app in `D:\docquiz`, but this is
+A stall quiz for CPHI: three random pharma questions with no time limit, then a
+prize wheel. Built from the same bones as the doctor app in `D:\docquiz`, but this is
 a **separate project with its own deployment** — nothing here changes that one.
 
 ```

@@ -4,14 +4,14 @@ import { CONFIG } from '../config.js'
 
 const RULES = [
   { value: String(CONFIG.questionsPerQuiz), label: 'Questions', note: 'drawn at random' },
-  { value: '60s', label: 'To play', note: 'start to finish' },
+  { value: 'No', label: 'Time limit', note: 'play at your pace' },
   { value: '1', label: 'Spin', note: 'to win a prize' },
 ]
 
 const EASE = [0.16, 1, 0.3, 1]
 
 export default function LandingPage() {
-  const { setStep, bank } = useFlow()
+  const { setStep } = useFlow()
   const reduced = useReducedMotion()
 
   const rise = (delay) => ({
@@ -39,8 +39,8 @@ export default function LandingPage() {
         </motion.h1>
 
         <motion.p className="hero__lede" {...rise(0.2)}>
-          Three quick questions from a bank of {bank.length} — pharmacology, formulation, regulation.
-          Get one right and the prize wheel is yours to spin.
+          Answer three pharma questions at your own pace. Get even one right
+          and you spin the wheel for a prize.
         </motion.p>
 
         <motion.div className="hero__actions" {...rise(0.28)}>

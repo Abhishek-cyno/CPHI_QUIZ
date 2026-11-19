@@ -3,7 +3,7 @@
    ---------------------------------------------------------
    A dark, event-kiosk look built for a tablet on a stall:
    deep Eqova navy as the room, gold as the one colour that
-   means "press this", and a paper ticket at the end.
+   means "press this".
 
    Brand values are sampled from the Eqova logo:
      navy #0C3C54 · gold #F4AC3C · grey #9CA4A4
@@ -874,163 +874,59 @@ select.field__input option { background: var(--bg-2); color: var(--text); }
 .prize__desc { font-size: 13.5px; color: var(--text-2); }
 
 /* =========================================================
-   Confirm details
+   Result
    ========================================================= */
-.summary {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
-  margin-bottom: 22px;
-  border-radius: var(--r);
-  background: rgba(244, 172, 60, 0.09);
-  border: 1px solid rgba(244, 172, 60, 0.35);
-}
-.summary__emoji { font-size: 28px; }
-.summary__text { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-.summary__label {
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--gold);
-}
-.summary__title { font-family: var(--display); font-size: 16.5px; font-weight: 700; }
-.summary__score {
-  font-family: var(--mono);
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text-2);
-  padding: 6px 10px;
-  border-radius: 10px;
-  background: rgba(4, 20, 30, 0.5);
-}
-
-/* =========================================================
-   The ticket
-   ========================================================= */
-.finale {
-  width: 100%;
-  max-width: 720px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 22px;
-}
-
-.ticket {
-  --notch: 16px;
-  position: relative;
-  width: 100%;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 220px;
-  border-radius: 22px;
-  color: var(--navy);
-  filter: drop-shadow(0 40px 50px rgba(0, 0, 0, 0.55));
-}
-.ticket__main {
-  position: relative;
-  padding: 26px 28px;
-  background: var(--paper);
-  border-radius: 22px 0 0 22px;
-  /* Cut a semicircle out of the top and bottom where the stub tears off. */
-  -webkit-mask:
-    radial-gradient(circle var(--notch) at 100% 0, transparent 98%, #000) top / 100% 51% no-repeat,
-    radial-gradient(circle var(--notch) at 100% 100%, transparent 98%, #000) bottom / 100% 51% no-repeat;
-          mask:
-    radial-gradient(circle var(--notch) at 100% 0, transparent 98%, #000) top / 100% 51% no-repeat,
-    radial-gradient(circle var(--notch) at 100% 100%, transparent 98%, #000) bottom / 100% 51% no-repeat;
-}
-.ticket__stub {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 6px;
-  padding: 24px 18px;
-  text-align: center;
-  background: linear-gradient(160deg, var(--gold-hi), var(--gold));
-  border-radius: 0 22px 22px 0;
-  border-left: 2px dashed rgba(12, 60, 84, 0.35);
-  -webkit-mask:
-    radial-gradient(circle var(--notch) at 0 0, transparent 98%, #000) top / 100% 51% no-repeat,
-    radial-gradient(circle var(--notch) at 0 100%, transparent 98%, #000) bottom / 100% 51% no-repeat;
-          mask:
-    radial-gradient(circle var(--notch) at 0 0, transparent 98%, #000) top / 100% 51% no-repeat,
-    radial-gradient(circle var(--notch) at 0 100%, transparent 98%, #000) bottom / 100% 51% no-repeat;
-}
-
-.ticket__brand {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid rgba(12, 60, 84, 0.14);
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: rgba(12, 60, 84, 0.7);
-}
-.ticket__prize {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin: 20px 0;
-}
-.ticket__emoji {
-  flex: none;
+.won { gap: 6px; }
+.won__badge {
   display: grid;
   place-items: center;
-  width: 64px; height: 64px;
-  border-radius: 18px;
-  background: var(--navy);
-  font-size: 34px;
+  width: 96px; height: 96px;
+  margin-bottom: 10px;
+  border-radius: 50%;
+  font-size: 48px;
+  background: radial-gradient(circle at 35% 30%, rgba(255, 199, 104, 0.35), rgba(244, 172, 60, 0.12));
+  border: 2px solid rgba(244, 172, 60, 0.55);
+  box-shadow: 0 0 40px -8px var(--gold-glow);
 }
-.ticket__label {
-  display: block;
+.won__badge--super { border-color: var(--gold-hi); box-shadow: 0 0 60px -4px rgba(255, 199, 104, 0.7); }
+.won__badge--dud { background: rgba(255, 255, 255, 0.05); border-color: var(--line-2); box-shadow: none; }
+.won__label {
+  margin-top: 14px;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgba(12, 60, 84, 0.6);
+  color: var(--text-3);
 }
-.ticket__title {
-  display: block;
+.won__prize {
   font-family: var(--display);
-  font-size: clamp(20px, 3vw, 26px);
+  font-size: clamp(26px, 4.5vw, 36px);
   font-weight: 800;
   line-height: 1.15;
   letter-spacing: -0.02em;
+  color: var(--gold);
+  text-wrap: balance;
 }
-.ticket__meta { display: flex; flex-wrap: wrap; gap: 12px 32px; }
-.ticket__meta > div { min-width: 0; }
-.ticket__meta dt {
-  font-family: var(--mono);
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: rgba(12, 60, 84, 0.55);
+.won__status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 22px;
+  padding: 12px 18px;
+  min-height: 48px;
+  justify-content: center;
+  border-radius: var(--r-sm);
+  background: rgba(4, 20, 30, 0.45);
+  border: 1px solid var(--line);
+  font-size: 14px;
+  color: var(--text-2);
 }
-.ticket__meta dd { font-family: var(--display); font-weight: 700; font-size: 16px; overflow-wrap: anywhere; }
-
-.ticket__stub .ticket__label { color: rgba(27, 18, 0, 0.6); }
-.ticket__ref {
-  font-family: var(--mono);
-  font-size: clamp(22px, 3.2vw, 27px);
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: var(--gold-ink);
-}
-.ticket__hint { font-size: 12.5px; font-weight: 600; color: rgba(27, 18, 0, 0.7); }
-
-.finale__note { font-size: 14px; color: var(--text-2); text-align: center; }
-.finale__note strong { color: var(--text); font-weight: 600; word-break: break-all; }
+.won__ref { font-family: var(--mono); font-size: 17px; letter-spacing: 0.04em; color: var(--text); margin-left: 6px; }
+.won__muted { font-size: 13.5px; color: var(--text-3); margin-top: 8px; }
+.won__muted strong { color: var(--text-2); font-weight: 600; word-break: break-all; }
+.won__error { color: var(--bad); font-weight: 500; }
 
 /* =========================================================
    Loading overlay (LoadingOverlay.jsx)
@@ -1117,30 +1013,6 @@ select.field__input option { background: var(--bg-2); color: var(--text); }
   .marquee { --bulb: 9px; --marquee-r: calc(50cqi - 10px); }
   .marquee__wheel { inset: 22px; }
 
-  /* The ticket turns on its side: stub along the bottom, notches at the
-     left and right edges of the tear line. */
-  .ticket { grid-template-columns: 1fr; }
-  .ticket__main {
-    border-radius: 22px 22px 0 0;
-    -webkit-mask:
-      radial-gradient(circle var(--notch) at 0 100%, transparent 98%, #000) left / 51% 100% no-repeat,
-      radial-gradient(circle var(--notch) at 100% 100%, transparent 98%, #000) right / 51% 100% no-repeat;
-            mask:
-      radial-gradient(circle var(--notch) at 0 100%, transparent 98%, #000) left / 51% 100% no-repeat,
-      radial-gradient(circle var(--notch) at 100% 100%, transparent 98%, #000) right / 51% 100% no-repeat;
-  }
-  .ticket__stub {
-    border-radius: 0 0 22px 22px;
-    border-left: 0;
-    border-top: 2px dashed rgba(12, 60, 84, 0.35);
-    -webkit-mask:
-      radial-gradient(circle var(--notch) at 0 0, transparent 98%, #000) left / 51% 100% no-repeat,
-      radial-gradient(circle var(--notch) at 100% 0, transparent 98%, #000) right / 51% 100% no-repeat;
-            mask:
-      radial-gradient(circle var(--notch) at 0 0, transparent 98%, #000) left / 51% 100% no-repeat,
-      radial-gradient(circle var(--notch) at 100% 0, transparent 98%, #000) right / 51% 100% no-repeat;
-  }
-  .ticket__main { padding: 22px 20px; }
 }
 
 /* =========================================================

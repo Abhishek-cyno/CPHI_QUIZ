@@ -10,7 +10,7 @@ import { STEPS } from '../context/FlowContext.jsx'
    same four phases, so the rail never changes shape mid-run.
    ========================================================= */
 
-const PHASES = ['Details', 'Quiz', 'Spin', 'Ticket']
+const PHASES = ['Details', 'Quiz', 'Spin', 'Prize']
 
 // How far through the whole run each step is: [phase index, fill of that phase].
 const STEP_POSITION = {
@@ -19,7 +19,6 @@ const STEP_POSITION = {
   [STEPS.QUIZ]: [1, 0.55],
   [STEPS.COMPLETE]: [1, 1],
   [STEPS.GIFT]: [2, 0.5],
-  [STEPS.CONTACT]: [3, 0.5],
   [STEPS.THANKYOU]: [3, 1],
 }
 

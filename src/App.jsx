@@ -10,7 +10,6 @@ import QuizIntroPage from './pages/QuizIntroPage.jsx'
 import QuizPage from './pages/QuizPage.jsx'
 import CompletePage from './pages/CompletePage.jsx'
 import GiftPage from './pages/GiftPage.jsx'
-import ContactPage from './pages/ContactPage.jsx'
 import ThankYouPage from './pages/ThankYouPage.jsx'
 
 const screens = {
@@ -20,7 +19,6 @@ const screens = {
   [STEPS.QUIZ]: QuizPage,
   [STEPS.COMPLETE]: CompletePage,
   [STEPS.GIFT]: GiftPage,
-  [STEPS.CONTACT]: ContactPage,
   [STEPS.THANKYOU]: ThankYouPage,
 }
 

@@ -5,7 +5,7 @@ prize wheel. Built from the same bones as the doctor app in `D:\docquiz`, but th
 a **separate project with its own deployment** — nothing here changes that one.
 
 ```
-Landing → Register → Quiz intro → 3 questions → Score → 🎡 Spin → Confirm details → Thank you
+Landing → Register → Quiz intro → 3 questions → Score → 🎡 Spin → What you won
 ```
 
 ## What is different from the doctor app
@@ -38,7 +38,7 @@ tablet on a stall.
 | Quiz | Stacked options + side progress card | 2×2 answer tiles, result pips per question |
 | Score | Trophy + number | Animated gold score ring |
 | Wheel | Plain wheel in a card | Wheel inside a ring of marquee bulbs that chase while it spins, controls beside it |
-| Finish | Thank-you card | A tear-off **prize ticket** with the reference on the stub |
+| Finish | Contact form, then thank-you card | No second form: straight to a plain "you won" card with the reference, saved in the background from the registration details |
 
 Brand values are sampled from `public/images/eqova-logo.png`: navy `#0C3C54` is the
 room, gold `#F4AC3C` is reserved for anything you press and anything you win, grey

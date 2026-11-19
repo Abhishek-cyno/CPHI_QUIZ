@@ -48,7 +48,6 @@ export const STEPS = {
   QUIZ: 'quiz',
   COMPLETE: 'complete',
   GIFT: 'gift',
-  CONTACT: 'contact',
   THANKYOU: 'thankyou',
 }
 
@@ -65,7 +64,7 @@ export function FlowProvider({ children }) {
   const [questions, setQuestions] = useState([]) // the 3 picked for this run
   const [answers, setAnswers] = useState([])     // { questionId, question, chosen, correct }
   const [gift, setGift] = useState(null)
-  // Filled in by ContactPage once the server confirms the entry — `ref` is
+  // Filled in by the result page once the server confirms the entry — `ref` is
   // what the visitor quotes when collecting their prize.
   const [entry, setEntry] = useState(EMPTY_ENTRY)
 

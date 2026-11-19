@@ -168,7 +168,7 @@ function GiftScreen({ eligibility, onRetry, checking }) {
             {gift
               ? isConsolation
                 ? 'The wheel didn’t land on a prize — thanks for playing!'
-                : 'Confirm your details next to get your prize ticket.'
+                : 'Tap Continue to claim it.'
               : spinning
               ? 'Round and round it goes…'
               : 'Tap SPIN in the middle of the wheel.'}
@@ -199,7 +199,7 @@ function GiftScreen({ eligibility, onRetry, checking }) {
           <button className="btn btn--ghost" onClick={() => setStep(STEPS.COMPLETE)} disabled={spinning}>
             Back
           </button>
-          <button className="btn btn--gold" disabled={!gift || spinning} onClick={() => setStep(STEPS.CONTACT)}>
+          <button className="btn btn--gold" disabled={!gift || spinning} onClick={() => setStep(STEPS.THANKYOU)}>
             Continue <span className="btn__arrow" aria-hidden="true">→</span>
           </button>
         </div>

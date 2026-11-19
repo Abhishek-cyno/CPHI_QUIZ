@@ -12,7 +12,7 @@ const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
  *
  * Every question comes from one shared bank, so nothing here changes what
  * the visitor is asked — organization and designation are for the stall
- * team's follow-up. Email is optional: the on-screen ticket is the visitor's
+ * team's follow-up. Email is optional: the on-screen result is the visitor's
  * real record, and a confirmation mail is a bonus for those who want one.
  */
 export default function RegisterPage() {

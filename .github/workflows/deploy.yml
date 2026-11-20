@@ -1,20 +1,27 @@
 name: Deploy to Lightsail
 
 # Same pipeline as the medicon app (Abhishek-cyno/Docquiz): build on every push
-# to main and rsync dist/ to the Lightsail server. Only TARGET_PATH differs —
-# it points at the quiz.eqova.in document root instead of medicon's.
+# to main and rsync dist/ to the Lightsail server.
 #
-# Needs four repository secrets (Settings > Secrets and variables > Actions):
+# The destination is deliberately NOT a secret. This server also hosts
+# medicon.eqova.in (/var/www/medicon) and the rsync below runs with --delete,
+# so a TARGET_PATH secret holding medicon's path by mistake would overwrite
+# medicon with this site. Hard-coding the quiz folder, and checking it again
+# before the copy, makes that impossible.
+#
+# Needs three repository secrets (Settings > Secrets and variables > Actions):
 #   SSH_PRIVATE_KEY  the same deploy key the Docquiz repo uses
 #   SSH_HOST         the server address (13.202.18.203)
-#   SSH_USERNAME     the server login user
-#   TARGET_PATH      the quiz.eqova.in DocumentRoot, with a trailing slash
+#   SSH_USERNAME     the server login user (bitnami)
 on:
   push:
     branches: [ main ]
   # Lets the first deploy (or a redeploy) be started from the Actions tab
   # without having to push a commit.
   workflow_dispatch:
+
+env:
+  DEPLOY_TARGET: /var/www/quiz/
 
 jobs:
   build-and-deploy:
@@ -34,13 +41,21 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Refuse to deploy anywhere but the quiz folder
+        run: |
+          if [ "$DEPLOY_TARGET" != "/var/www/quiz/" ]; then
+            echo "::error::Deploy target is '$DEPLOY_TARGET', not /var/www/quiz/ - stopping so no other site can be overwritten."
+            exit 1
+          fi
+          test -f dist/index.html || { echo "::error::dist/index.html missing - build output looks wrong"; exit 1; }
+
       - name: Deploy dist/ to Lightsail
         uses: easingthemes/ssh-deploy@main
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           REMOTE_HOST: ${{ secrets.SSH_HOST }}
           REMOTE_USER: ${{ secrets.SSH_USERNAME }}
-          TARGET: ${{ secrets.TARGET_PATH }}
+          TARGET: ${{ env.DEPLOY_TARGET }}
           SOURCE: "dist/"
           # --delete keeps the server an exact copy of dist/; .well-known is
           # excluded so it never wipes the Let's Encrypt renewal challenge.

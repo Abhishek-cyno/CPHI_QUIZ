@@ -77,7 +77,7 @@ export default function RegisterPage() {
         <PhoneInput
           id="register-mobile"
           label="Mobile number"
-          hint="one prize per number"
+          // hint="one prize per number"
           code={countryCode}
           number={mobile}
           onCodeChange={setCountryCode}
@@ -112,7 +112,7 @@ export default function RegisterPage() {
 
         <label className="field">
           <span className="field__label">
-            Email <span className="field__hint">optional — for a confirmation</span>
+            Email <span className="field__hint">optional</span>
           </span>
           <input
             className="field__input"

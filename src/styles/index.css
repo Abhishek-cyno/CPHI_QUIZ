@@ -925,7 +925,9 @@ select.field__input option { background: var(--bg-2); color: var(--text); }
 }
 .won__ref { font-family: var(--mono); font-size: 17px; letter-spacing: 0.04em; color: var(--text); margin-left: 6px; }
 .won__muted { font-size: 13.5px; color: var(--text-3); margin-top: 8px; }
-.won__muted strong { color: var(--text-2); font-weight: 600; word-break: break-all; }
+/* Wrap a long address only when it truly doesn't fit — break-all split
+   "dev.in3@cyno.co.in" mid-domain even with room on the next line. */
+.won__muted strong { color: var(--text-2); font-weight: 600; overflow-wrap: anywhere; }
 .won__error { color: var(--bad); font-weight: 500; }
 
 /* =========================================================
@@ -1004,6 +1006,9 @@ select.field__input option { background: var(--bg-2); color: var(--text); }
   .verdict { margin-right: 0; text-align: center; }
 
   .actions { grid-template-columns: 1fr 2fr; }
+  /* The two-column Back/Continue layout above must not catch a lone button,
+     or it sits in the narrow left column instead of the centre. */
+  .actions--single { grid-template-columns: 1fr; }
   .btn { padding: 0 18px; }
   .btn--xl { width: 100%; }
 

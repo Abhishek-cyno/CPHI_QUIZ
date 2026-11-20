@@ -18,13 +18,23 @@ async function expectNoSideScroll(page) {
   expect(overflow, 'page is wider than the screen').toBeLessThanOrEqual(0)
 }
 
+/** A lone button must sit in the middle of its card, not in a left-hand column. */
+async function expectCentred(page, button) {
+  const btn = await button.boundingBox()
+  const card = await button.locator('xpath=ancestor::*[contains(@class,"panel")][1]').boundingBox()
+  const offset = Math.abs((btn.x + btn.width / 2) - (card.x + card.width / 2))
+  expect(offset, 'button is off-centre in its card').toBeLessThanOrEqual(2)
+}
+
+// Fields are found by their visible labels, not placeholders, so rewording
+// a placeholder (e.g. the designation example) never breaks these tests.
 async function register(page, { email = VISITOR.email } = {}) {
   await page.getByRole('button', { name: /Play now/ }).click()
-  await page.getByPlaceholder('Your name').fill(VISITOR.name)
-  await page.locator('.phone-input__number').fill(VISITOR.mobile)
-  await page.getByPlaceholder('Company or institute').fill(VISITOR.organization)
-  await page.getByPlaceholder('e.g. QA Manager').fill(VISITOR.designation)
-  await page.getByPlaceholder('you@company.com').fill(email)
+  await page.getByLabel('Full name').fill(VISITOR.name)
+  await page.getByLabel(/Mobile number/).fill(VISITOR.mobile)
+  await page.getByLabel('Organization').fill(VISITOR.organization)
+  await page.getByLabel('Designation').fill(VISITOR.designation)
+  await page.getByLabel(/^Email/).fill(email)
   await page.getByRole('button', { name: /Continue/ }).click()
   await page.getByRole('button', { name: /Start the quiz/ }).click()
 }
@@ -64,6 +74,7 @@ test('register, play, spin and see the prize — saved once with every field', a
   await answer(page, [true, true, false])
 
   await expect(page.locator('.score__value')).toHaveText(/^2\s*\/\s*3$/)
+  await expectCentred(page, page.getByRole('button', { name: /Spin the wheel/ }))
   await page.getByRole('button', { name: /Spin the wheel/ }).click()
   await spin(page)
   await page.getByRole('button', { name: /^Continue/ }).click()
@@ -73,6 +84,7 @@ test('register, play, spin and see the prize — saved once with every field', a
   await expect(page.locator('form')).toHaveCount(0)
   await expect(page.locator('.won__ref')).toHaveText(REF)
   await expect(page.getByText(`A confirmation is on its way to ${VISITOR.email}`)).toBeVisible()
+  await expectCentred(page, page.getByRole('button', { name: /Done — next player/ }))
   await expectNoSideScroll(page)
 
   const claim = posts.find((p) => p.action === 'claimGift')
@@ -101,22 +113,22 @@ test('registration requires organization and designation, but not email', async 
   await fakeBackend(page)
   await page.goto('/')
   await page.getByRole('button', { name: /Play now/ }).click()
-  await page.getByPlaceholder('Your name').fill(VISITOR.name)
-  await page.locator('.phone-input__number').fill(VISITOR.mobile)
+  await page.getByLabel('Full name').fill(VISITOR.name)
+  await page.getByLabel(/Mobile number/).fill(VISITOR.mobile)
 
   const cont = page.getByRole('button', { name: /Continue/ })
   await cont.click()
   await expect(page.getByRole('alert')).toHaveText(/organization/i)
-  await page.getByPlaceholder('Company or institute').fill(VISITOR.organization)
+  await page.getByLabel('Organization').fill(VISITOR.organization)
   await cont.click()
   await expect(page.getByRole('alert')).toHaveText(/designation/i)
-  await page.getByPlaceholder('e.g. QA Manager').fill(VISITOR.designation)
+  await page.getByLabel('Designation').fill(VISITOR.designation)
 
-  await page.getByPlaceholder('you@company.com').fill('not-an-email')
+  await page.getByLabel(/^Email/).fill('not-an-email')
   await cont.click()
   await expect(page.getByRole('alert')).toHaveText(/email/i)
 
-  await page.getByPlaceholder('you@company.com').fill('')
+  await page.getByLabel(/^Email/).fill('')
   await cont.click()
   await expect(page.getByRole('button', { name: /Start the quiz/ })).toBeVisible()
 })

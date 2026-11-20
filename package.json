@@ -7,7 +7,11 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "check": "node scripts/check.mjs",
+    "test": "node --test tests/unit/",
+    "test:e2e": "playwright test",
+    "ci": "npm run check && npm test && npm run build && npm run test:e2e"
   },
   "dependencies": {
     "framer-motion": "^11.3.19",
@@ -15,6 +19,7 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.1",
     "@vitejs/plugin-react": "^4.3.1",
     "vite": "^5.4.0"
   }

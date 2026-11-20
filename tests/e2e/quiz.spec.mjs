@@ -1,0 +1,159 @@
+// The whole visitor journey in a real browser, on both a stall tablet and a
+// phone (see playwright.config.mjs). The Apps Script is faked, so these
+// tests can play, spin and "win" as often as they like.
+import { test, expect } from '@playwright/test'
+import { fakeBackend, QUESTIONS, GIFTS, REF } from './backend.mjs'
+
+const VISITOR = {
+  name: 'Asha Verma',
+  mobile: '9876543210',
+  organization: 'Sun Pharmaceutical Industries Ltd',
+  designation: 'Senior QA Manager',
+  email: 'asha@example.com',
+}
+
+/** Nothing on the page may push it wider than the screen — not even mid-spin. */
+async function expectNoSideScroll(page) {
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
+  expect(overflow, 'page is wider than the screen').toBeLessThanOrEqual(0)
+}
+
+async function register(page, { email = VISITOR.email } = {}) {
+  await page.getByRole('button', { name: /Play now/ }).click()
+  await page.getByPlaceholder('Your name').fill(VISITOR.name)
+  await page.locator('.phone-input__number').fill(VISITOR.mobile)
+  await page.getByPlaceholder('Company or institute').fill(VISITOR.organization)
+  await page.getByPlaceholder('e.g. QA Manager').fill(VISITOR.designation)
+  await page.getByPlaceholder('you@company.com').fill(email)
+  await page.getByRole('button', { name: /Continue/ }).click()
+  await page.getByRole('button', { name: /Start the quiz/ }).click()
+}
+
+/** Answers each question right or wrong per `plan`, using the real answer key. */
+async function answer(page, plan) {
+  for (const right of plan) {
+    await expect(page.locator('.choice:not([disabled])').first()).toBeVisible()
+    const text = (await page.locator('.quiz__question').innerText()).trim()
+    const question = QUESTIONS.find((q) => q.q === text)
+    expect(question, `question on screen is not in the bank: "${text}"`).toBeTruthy()
+    const pick = right ? question.answer : (question.answer + 1) % 4
+    await page.locator('.choice').nth(pick).click()
+    await expect(page.locator('.verdict')).toHaveText(right ? /Correct/ : /Not quite/)
+    await page.getByRole('button', { name: /Next question|See my score/ }).click()
+  }
+}
+
+async function spin(page) {
+  const hub = page.locator('.wheel__hub')
+  await expect(hub).toBeEnabled()
+  await expectNoSideScroll(page)
+  await hub.click()
+  await page.waitForTimeout(1500)
+  await expectNoSideScroll(page) // a rotating wheel briefly reports a larger box
+  await expect(page.locator('.prize')).toBeVisible()
+}
+
+test('register, play, spin and see the prize — saved once with every field', async ({ page }) => {
+  const posts = await fakeBackend(page)
+  await page.goto('/')
+  await expect(page.getByRole('heading', { name: /Think you know/ })).toBeVisible()
+  await expect(page.locator('.rules')).toContainText('Time limit')
+  await expectNoSideScroll(page)
+
+  await register(page)
+  await answer(page, [true, true, false])
+
+  await expect(page.locator('.score__value')).toHaveText(/^2\s*\/\s*3$/)
+  await page.getByRole('button', { name: /Spin the wheel/ }).click()
+  await spin(page)
+  await page.getByRole('button', { name: /^Continue/ }).click()
+
+  // Straight to the result: no second form, no ticket.
+  await expect(page.getByRole('heading', { name: /Congratulations, Asha/ })).toBeVisible()
+  await expect(page.locator('form')).toHaveCount(0)
+  await expect(page.locator('.won__ref')).toHaveText(REF)
+  await expect(page.getByText(`A confirmation is on its way to ${VISITOR.email}`)).toBeVisible()
+  await expectNoSideScroll(page)
+
+  const claim = posts.find((p) => p.action === 'claimGift')
+  const winnable = [...GIFTS.superpremium, ...GIFTS.premium, ...GIFTS.standard]
+    .filter((g) => g.active !== false && g.stock !== 0).map((g) => g.id)
+  expect(winnable, 'the wheel must never land on an out-of-stock or withdrawn prize').toContain(claim.id)
+
+  const submits = posts.filter((p) => p.action === 'submit')
+  expect(submits, 'the entry must be saved exactly once').toHaveLength(1)
+  expect(submits[0]).toMatchObject({
+    name: VISITOR.name,
+    phone: `+91 ${VISITOR.mobile}`,
+    email: VISITOR.email,
+    organization: VISITOR.organization,
+    designation: VISITOR.designation,
+    score: 2,
+    total: 3,
+  })
+  expect(submits[0].answers).toHaveLength(3)
+
+  await page.getByRole('button', { name: /Done — next player/ }).click()
+  await expect(page.getByRole('button', { name: /Play now/ })).toBeVisible()
+})
+
+test('registration requires organization and designation, but not email', async ({ page }) => {
+  await fakeBackend(page)
+  await page.goto('/')
+  await page.getByRole('button', { name: /Play now/ }).click()
+  await page.getByPlaceholder('Your name').fill(VISITOR.name)
+  await page.locator('.phone-input__number').fill(VISITOR.mobile)
+
+  const cont = page.getByRole('button', { name: /Continue/ })
+  await cont.click()
+  await expect(page.getByRole('alert')).toHaveText(/organization/i)
+  await page.getByPlaceholder('Company or institute').fill(VISITOR.organization)
+  await cont.click()
+  await expect(page.getByRole('alert')).toHaveText(/designation/i)
+  await page.getByPlaceholder('e.g. QA Manager').fill(VISITOR.designation)
+
+  await page.getByPlaceholder('you@company.com').fill('not-an-email')
+  await cont.click()
+  await expect(page.getByRole('alert')).toHaveText(/email/i)
+
+  await page.getByPlaceholder('you@company.com').fill('')
+  await cont.click()
+  await expect(page.getByRole('button', { name: /Start the quiz/ })).toBeVisible()
+})
+
+test('no email, and the first save fails: Try again recovers it', async ({ page }) => {
+  const posts = await fakeBackend(page, { failFirstSubmit: true })
+  await page.goto('/')
+  await register(page, { email: '' })
+  await answer(page, [true, false, false])
+  await page.getByRole('button', { name: /Spin the wheel/ }).click()
+  await spin(page)
+  await page.getByRole('button', { name: /^Continue/ }).click()
+
+  await expect(page.getByText('Server busy, please try again.')).toBeVisible()
+  await page.getByRole('button', { name: /Try again/ }).click()
+  await expect(page.locator('.won__ref')).toHaveText(REF)
+  await expect(page.getByText(/confirmation is on its way/)).toHaveCount(0)
+  expect(posts.filter((p) => p.action === 'submit')).toHaveLength(2)
+})
+
+test('zero correct answers does not unlock the wheel', async ({ page }) => {
+  const posts = await fakeBackend(page)
+  await page.goto('/')
+  await register(page)
+  await answer(page, [false, false, false])
+  await expect(page.getByRole('heading', { name: /So close/ })).toBeVisible()
+  await expect(page.locator('.wheel__hub')).toHaveCount(0)
+  expect(posts.filter((p) => p.action === 'claimGift')).toHaveLength(0)
+})
+
+test('a number that already won cannot spin again', async ({ page }) => {
+  const posts = await fakeBackend(page, { eligible: false })
+  await page.goto('/')
+  await register(page)
+  await answer(page, [true, true, true])
+  await page.getByRole('button', { name: /Spin the wheel/ }).click()
+  await expect(page.getByRole('heading', { name: /already won/ })).toBeVisible()
+  await expect(page.locator('.wheel__hub')).toHaveCount(0)
+  expect(posts.filter((p) => p.action === 'claimGift')).toHaveLength(0)
+})

@@ -1,0 +1,14 @@
+{
+  "superpremium": [
+    { "id": "test-jackpot", "tier": "superpremium", "title": "Test Jackpot", "short": "Jackpot", "desc": "", "emoji": "🏆", "active": true, "stock": 0, "weight": 1 }
+  ],
+  "premium": [
+    { "id": "test-lamp", "tier": "premium", "title": "Test Desk Lamp", "short": "Lamp", "desc": "", "emoji": "💡", "active": true, "stock": 10, "weight": 3 },
+    { "id": "test-diary", "tier": "premium", "title": "Test Diary Set", "short": "Diary", "desc": "", "emoji": "📓", "active": true, "stock": 10, "weight": 3 }
+  ],
+  "standard": [
+    { "id": "test-voucher", "tier": "standard", "title": "Test Voucher", "short": "Voucher", "desc": "", "emoji": "💳", "active": true, "stock": null, "weight": 2 },
+    { "id": "test-withdrawn", "tier": "standard", "title": "Test Withdrawn", "short": "Withdrawn", "desc": "", "emoji": "🚫", "active": false, "stock": null, "weight": 2 }
+  ],
+  "consolation": []
+}

@@ -1,0 +1,139 @@
+name: CI/CD
+
+# Every push and pull request is built and tested. Only a push to main that
+# passes every test is deployed to quiz.eqova.in — a broken change stops here
+# instead of reaching the stall.
+#
+#   test   ─ content checks, unit tests, build, browser tests (backend faked)
+#      │      ↓ uploads the exact build that passed
+#   deploy ─ (main only) copies that build to /var/www/quiz on Lightsail,
+#             then checks the live site serves it and medicon is still up
+#
+# The server also hosts medicon.eqova.in (/var/www/medicon), and the copy runs
+# with --delete. So the destination is fixed below rather than a secret: a
+# mistyped secret could otherwise overwrite medicon on the next push.
+#
+# Needs three repository secrets (Settings > Secrets and variables > Actions):
+#   SSH_PRIVATE_KEY  the Lightsail deploy key
+#   SSH_HOST         13.202.18.203
+#   SSH_USERNAME     bitnami
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  # Redeploy from the Actions tab without pushing a commit.
+  workflow_dispatch:
+
+# One run per branch at a time. Superseded PR runs are cancelled, but a deploy
+# is never cancelled halfway through copying files to the server.
+concurrency:
+  group: ci-cd-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  DEPLOY_TARGET: /var/www/quiz/
+  SITE_URL: https://quiz.eqova.in
+
+jobs:
+  test:
+    name: Build & test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check questions, Sheet seed, Apps Script and config
+        run: npm run check
+
+      - name: Unit tests (wheel, phone handling, Apps Script against a fake Sheet)
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Install Chromium for browser tests
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser tests on tablet and phone (Apps Script faked, no live writes)
+        run: npm run test:e2e
+
+      - name: Keep the browser-test report when something fails
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+      # The deploy job ships this exact folder, so what goes live is what was tested.
+      - name: Keep the tested build
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7
+          if-no-files-found: error
+
+  deploy:
+    name: Deploy to quiz.eqova.in
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: production
+      url: https://quiz.eqova.in
+    steps:
+      - name: Fetch the tested build
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: Refuse to deploy anywhere but the quiz folder
+        run: |
+          if [ "$DEPLOY_TARGET" != "/var/www/quiz/" ]; then
+            echo "::error::Deploy target is '$DEPLOY_TARGET', not /var/www/quiz/ - stopping so no other site can be overwritten."
+            exit 1
+          fi
+          test -f dist/index.html || { echo "::error::dist/index.html missing - build output looks wrong"; exit 1; }
+
+      - name: Copy dist/ to Lightsail
+        uses: easingthemes/ssh-deploy@main
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          REMOTE_HOST: ${{ secrets.SSH_HOST }}
+          REMOTE_USER: ${{ secrets.SSH_USERNAME }}
+          TARGET: ${{ env.DEPLOY_TARGET }}
+          SOURCE: "dist/"
+          # --delete keeps the server an exact copy of dist/; .well-known is
+          # excluded so it never wipes the Let's Encrypt renewal challenge.
+          ARGS: "-rlgoDzvc -i --delete --exclude=.well-known"
+
+      - name: Check the live site is serving this build, and medicon is unaffected
+        run: |
+          expected=$(grep -o '/assets/index-[A-Za-z0-9_-]*\.js' dist/index.html)
+          for attempt in 1 2 3 4 5 6; do
+            live=$(curl -fsS --max-time 20 "$SITE_URL/" | grep -o '/assets/index-[A-Za-z0-9_-]*\.js' || true)
+            [ "$live" = "$expected" ] && break
+            echo "live site still serves '$live', waiting for '$expected' ($attempt/6)"; sleep 10
+          done
+          [ "$live" = "$expected" ] || { echo "::error::$SITE_URL is serving '$live', not the build just deployed ('$expected')"; exit 1; }
+          curl -fsS --max-time 20 -o /dev/null "$SITE_URL$expected" || { echo "::error::app bundle $expected does not load"; exit 1; }
+          medicon=$(curl -s --max-time 20 -o /dev/null -w '%{http_code}' https://medicon.eqova.in/)
+          [ "$medicon" = "200" ] || { echo "::error::medicon.eqova.in answered $medicon after this deploy"; exit 1; }
+          echo "quiz.eqova.in serves $expected; medicon.eqova.in answers 200" >> "$GITHUB_STEP_SUMMARY"

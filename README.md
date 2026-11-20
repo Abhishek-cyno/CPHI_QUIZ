@@ -49,6 +49,35 @@ Checked at 1024×768 (stall tablet, the whole wheel screen fits without scrollin
 and 390×844 (a visitor's phone), with no horizontal overflow at either — including
 mid-spin, when the rotating wheel briefly reports a larger box.
 
+## CI/CD
+
+`.github/workflows/ci-cd.yml` runs on every push and pull request:
+
+```
+test    content checks → unit tests → build → browser tests (tablet + phone)
+  │       uploads the exact build that passed
+deploy  main only, and only if test passed:
+          copy that build to /var/www/quiz on Lightsail
+          → check quiz.eqova.in now serves it, and medicon.eqova.in still answers 200
+```
+
+A pull request gets the full test run but is never deployed. A failing test on
+`main` stops the deploy, so the live site keeps the last good version.
+
+| Command | What it checks |
+|---|---|
+| `npm run check` | every question has 4 options and a valid answer; the Sheet seed TSV matches `questions.json`; the Apps Script parses; **no real spreadsheet IDs are committed** (this repo is public); `apiEndpoint` is an Apps Script URL |
+| `npm test` | the wheel never lands on an out-of-stock or withdrawn prize and follows the weights; phone handling; and the **real Apps Script** run against a fake Sheet — one row per visitor, digits-only phones, one prize per mobile, optional email, formula-safe text, the header-less-tab repair |
+| `npm run test:e2e` | the full visitor journey in Chromium at 1024×768 and 390×844, with the Apps Script faked so tests never write to the live Sheet |
+| `npm run ci` | all of the above, in order |
+
+Browser tests locally: run `npm run build` first, and set `PW_CHANNEL=msedge` (or
+`chrome`) to use an installed browser instead of downloading Playwright's.
+
+The deploy target is fixed in the workflow, not a secret: the server also hosts
+medicon, and the copy deletes anything not in the build. Secrets needed:
+`SSH_PRIVATE_KEY`, `SSH_HOST`, `SSH_USERNAME`.
+
 ## Setup
 
 ```bash

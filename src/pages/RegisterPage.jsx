@@ -90,7 +90,7 @@ export default function RegisterPage() {
             <input
               className="field__input"
               type="text"
-              placeholder="Company or institute"
+              placeholder="Hospital or institute"
               value={organization}
               onChange={(e) => setOrganization(e.target.value)}
               autoComplete="organization"
@@ -102,7 +102,7 @@ export default function RegisterPage() {
             <input
               className="field__input"
               type="text"
-              placeholder="e.g. QA Manager"
+              placeholder="e.g. Senior Resident"
               value={designation}
               onChange={(e) => setDesignation(e.target.value)}
               autoComplete="organization-title"

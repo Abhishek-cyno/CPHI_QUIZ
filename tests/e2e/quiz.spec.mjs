@@ -28,15 +28,16 @@ async function expectCentred(page, button) {
 
 // Fields are found by their visible labels, not placeholders, so rewording
 // a placeholder (e.g. the designation example) never breaks these tests.
-async function register(page, { email = VISITOR.email } = {}) {
-  await page.getByRole('button', { name: /Play now/ }).click()
-  await page.getByLabel('Full name').fill(VISITOR.name)
-  await page.getByLabel(/Mobile number/).fill(VISITOR.mobile)
-  await page.getByLabel('Organization').fill(VISITOR.organization)
-  await page.getByLabel('Designation').fill(VISITOR.designation)
-  await page.getByLabel(/^Email/).fill(email)
+// Continue goes straight into the quiz — there is no "ready?" screen.
+async function register(page, { designation = VISITOR.designation } = {}) {
+  await page.getByRole('button', { name: /Test your knowledge/ }).click()
+  await page.getByLabel(/^Full name/).fill(VISITOR.name)
+  await page.getByLabel(/^Mobile number/).fill(VISITOR.mobile)
+  await page.getByLabel(/^Organization/).fill(VISITOR.organization)
+  await page.getByLabel(/^Designation/).fill(designation)
+  await page.getByLabel(/^Email/).fill(VISITOR.email)
   await page.getByRole('button', { name: /Continue/ }).click()
-  await page.getByRole('button', { name: /Start the quiz/ }).click()
+  await expect(page.locator('.quiz__question')).toBeVisible()
 }
 
 /** Answers each question right or wrong per `plan`, using the real answer key. */
@@ -67,7 +68,9 @@ test('register, play, spin and see the prize — saved once with every field', a
   const posts = await fakeBackend(page)
   await page.goto('/')
   await expect(page.getByRole('heading', { name: /Think you know/ })).toBeVisible()
-  await expect(page.locator('.rules')).toContainText('Time limit')
+  await expect(page.locator('.teaser__bulb')).toBeVisible()
+  await expect(page.locator('.rules')).toHaveCount(0)
+  await expect(page.getByText(/Answer three pharma questions/)).toHaveCount(0)
   await expectNoSideScroll(page)
 
   await register(page)
@@ -79,12 +82,14 @@ test('register, play, spin and see the prize — saved once with every field', a
   await spin(page)
   await page.getByRole('button', { name: /^Continue/ }).click()
 
-  // Straight to the result: no second form, no ticket.
+  // Straight to the result: no second form, no reference, no stall line.
   await expect(page.getByRole('heading', { name: /Congratulations, Asha/ })).toBeVisible()
   await expect(page.locator('form')).toHaveCount(0)
-  await expect(page.locator('.won__ref')).toHaveText(REF)
   await expect(page.getByText(`A confirmation is on its way to ${VISITOR.email}`)).toBeVisible()
-  await expectCentred(page, page.getByRole('button', { name: /Done — next player/ }))
+  await expect(page.locator('.won__ref')).toHaveCount(0)
+  await expect(page.getByText(REF)).toHaveCount(0)
+  await expect(page.getByText(/Collect it/)).toHaveCount(0)
+  await expectCentred(page, page.getByRole('button', { name: /Start over/ }))
   await expectNoSideScroll(page)
 
   const claim = posts.find((p) => p.action === 'claimGift')
@@ -105,57 +110,79 @@ test('register, play, spin and see the prize — saved once with every field', a
   })
   expect(submits[0].answers).toHaveLength(3)
 
-  await page.getByRole('button', { name: /Done — next player/ }).click()
-  await expect(page.getByRole('button', { name: /Play now/ })).toBeVisible()
+  await page.getByRole('button', { name: /Start over/ }).click()
+  await expect(page.getByRole('button', { name: /Test your knowledge/ })).toBeVisible()
 })
 
-test('registration requires organization and designation, but not email', async ({ page }) => {
+test('registration requires organization and email, but not designation', async ({ page }) => {
   await fakeBackend(page)
   await page.goto('/')
-  await page.getByRole('button', { name: /Play now/ }).click()
-  await page.getByLabel('Full name').fill(VISITOR.name)
-  await page.getByLabel(/Mobile number/).fill(VISITOR.mobile)
+  await page.getByRole('button', { name: /Test your knowledge/ }).click()
+
+  // Required fields carry a star; the optional one carries nothing at all.
+  for (const label of ['Full name', 'Mobile number', 'Organization', 'Email']) {
+    await expect(page.locator('.field__label', { hasText: label }).locator('.field__req')).toHaveText('*')
+  }
+  await expect(page.locator('.field__label', { hasText: 'Designation' }).locator('.field__req')).toHaveCount(0)
+  await expect(page.getByText(/optional/i)).toHaveCount(0)
+  await expect(page.getByPlaceholder('Your company')).toBeVisible()
+  await expect(page.getByPlaceholder('e.g. Senior Manager')).toBeVisible()
+
+  await page.getByLabel(/^Full name/).fill(VISITOR.name)
+  await page.getByLabel(/^Mobile number/).fill(VISITOR.mobile)
 
   const cont = page.getByRole('button', { name: /Continue/ })
   await cont.click()
   await expect(page.getByRole('alert')).toHaveText(/organization/i)
-  await page.getByLabel('Organization').fill(VISITOR.organization)
+  await page.getByLabel(/^Organization/).fill(VISITOR.organization)
   await cont.click()
-  await expect(page.getByRole('alert')).toHaveText(/designation/i)
-  await page.getByLabel('Designation').fill(VISITOR.designation)
-
+  await expect(page.getByRole('alert')).toHaveText(/email/i) // designation left blank is fine
   await page.getByLabel(/^Email/).fill('not-an-email')
   await cont.click()
   await expect(page.getByRole('alert')).toHaveText(/email/i)
 
-  await page.getByLabel(/^Email/).fill('')
+  await page.getByLabel(/^Email/).fill(VISITOR.email)
   await cont.click()
-  await expect(page.getByRole('button', { name: /Start the quiz/ })).toBeVisible()
+  await expect(page.locator('.quiz__question')).toBeVisible()
 })
 
-test('no email, and the first save fails: Try again recovers it', async ({ page }) => {
+test('blank designation, and the first save fails: Try again recovers it', async ({ page }) => {
   const posts = await fakeBackend(page, { failFirstSubmit: true })
   await page.goto('/')
-  await register(page, { email: '' })
-  await answer(page, [true, false, false])
+  await register(page, { designation: '' })
+  await answer(page, [true, true, false])
   await page.getByRole('button', { name: /Spin the wheel/ }).click()
   await spin(page)
   await page.getByRole('button', { name: /^Continue/ }).click()
 
   await expect(page.getByText('Server busy, please try again.')).toBeVisible()
+  await expect(page.getByRole('button', { name: /Start over/ })).toBeEnabled()
   await page.getByRole('button', { name: /Try again/ }).click()
-  await expect(page.locator('.won__ref')).toHaveText(REF)
-  await expect(page.getByText(/confirmation is on its way/)).toHaveCount(0)
-  expect(posts.filter((p) => p.action === 'submit')).toHaveLength(2)
+  await expect(page.getByText(/confirmation is on its way/)).toBeVisible()
+  const submits = posts.filter((p) => p.action === 'submit')
+  expect(submits).toHaveLength(2)
+  expect(submits[1].designation).toBe('')
 })
 
-test('zero correct answers does not unlock the wheel', async ({ page }) => {
+test('one right answer is not enough: So close offers Try again and Leave', async ({ page }) => {
   const posts = await fakeBackend(page)
   await page.goto('/')
   await register(page)
+  await answer(page, [true, false, false])
+  await expect(page.getByRole('heading', { name: /So close/ })).toBeVisible()
+  await expect(page.getByText(/at least two right answers to unlock the prizes/)).toBeVisible()
+  await expect(page.locator('.wheel__hub')).toHaveCount(0)
+  await expectNoSideScroll(page)
+
+  // Try again: a fresh round of questions, straight away.
+  await page.getByRole('button', { name: /Try again/ }).click()
+  await expect(page.locator('.quiz__top .kicker')).toContainText('Question 1')
   await answer(page, [false, false, false])
   await expect(page.getByRole('heading', { name: /So close/ })).toBeVisible()
-  await expect(page.locator('.wheel__hub')).toHaveCount(0)
+
+  // Leave: back to the home screen.
+  await page.getByRole('button', { name: /Leave/ }).click()
+  await expect(page.getByRole('button', { name: /Test your knowledge/ })).toBeVisible()
   expect(posts.filter((p) => p.action === 'claimGift')).toHaveLength(0)
 })
 

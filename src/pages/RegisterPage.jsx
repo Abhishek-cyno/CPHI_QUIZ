@@ -7,16 +7,18 @@ import { splitPhone, joinPhone } from '../utils/phone.js'
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 
+/** Required: name, mobile, organization, email — each marked with a star. Designation is optional. */
+function Req() {
+  return <span className="field__req" aria-hidden="true">*</span>
+}
+
 /**
- * Name, mobile, organization, designation, and an optional email.
- *
  * Every question comes from one shared bank, so nothing here changes what
- * the visitor is asked — organization and designation are for the stall
- * team's follow-up. Email is optional: the on-screen result is the visitor's
- * real record, and a confirmation mail is a bonus for those who want one.
+ * the visitor is asked — these details are for the stall team's follow-up.
+ * Submitting goes straight into the quiz; there is no "ready?" screen.
  */
 export default function RegisterPage() {
-  const { setStep, visitor, setVisitor } = useFlow()
+  const { setStep, visitor, setVisitor, buildQuiz } = useFlow()
   const [name, setName] = useState(visitor.name)
   const [countryCode, setCountryCode] = useState(() => splitPhone(visitor.mobile).code)
   const [mobile, setMobile] = useState(() => splitPhone(visitor.mobile).number)
@@ -30,9 +32,8 @@ export default function RegisterPage() {
     if (!name.trim()) return setError('Please enter your name.')
     if (mobile.length !== 10) return setError('Please enter a valid 10-digit mobile number.')
     if (!organization.trim()) return setError('Please enter your organization.')
-    if (!designation.trim()) return setError('Please enter your designation.')
-    // Optional, but if something is typed it has to be an address.
-    if (email.trim() && !EMAIL_RE.test(email.trim())) return setError('That email address doesn’t look right — fix it or leave it blank.')
+    if (!email.trim()) return setError('Please enter your email.')
+    if (!EMAIL_RE.test(email.trim())) return setError('That email address doesn’t look right.')
     setError('')
 
     const details = {
@@ -48,7 +49,8 @@ export default function RegisterPage() {
     // submit steps create the row themselves if this one never lands.
     registerVisitor(details)
     prefetchEligibility(details.mobile)
-    setStep(STEPS.QUIZINTRO)
+    buildQuiz()
+    setStep(STEPS.QUIZ)
   }
 
   return (
@@ -61,7 +63,7 @@ export default function RegisterPage() {
 
       <form className="form" onSubmit={onSubmit} noValidate>
         <label className="field">
-          <span className="field__label">Full name</span>
+          <span className="field__label">Full name <Req /></span>
           <input
             className="field__input"
             type="text"
@@ -76,8 +78,7 @@ export default function RegisterPage() {
 
         <PhoneInput
           id="register-mobile"
-          label="Mobile number"
-          // hint="one prize per number"
+          label={<>Mobile number <Req /></>}
           code={countryCode}
           number={mobile}
           onCodeChange={setCountryCode}
@@ -86,11 +87,11 @@ export default function RegisterPage() {
 
         <div className="form__pair">
           <label className="field">
-            <span className="field__label">Organization</span>
+            <span className="field__label">Organization <Req /></span>
             <input
               className="field__input"
               type="text"
-              placeholder="Hospital or institute"
+              placeholder="Your company"
               value={organization}
               onChange={(e) => setOrganization(e.target.value)}
               autoComplete="organization"
@@ -102,7 +103,7 @@ export default function RegisterPage() {
             <input
               className="field__input"
               type="text"
-              placeholder="e.g. Senior Resident"
+              placeholder="e.g. Senior Manager"
               value={designation}
               onChange={(e) => setDesignation(e.target.value)}
               autoComplete="organization-title"
@@ -111,9 +112,7 @@ export default function RegisterPage() {
         </div>
 
         <label className="field">
-          <span className="field__label">
-            Email <span className="field__hint">optional</span>
-          </span>
+          <span className="field__label">Email <Req /></span>
           <input
             className="field__input"
             type="email"

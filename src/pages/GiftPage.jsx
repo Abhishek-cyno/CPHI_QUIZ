@@ -4,6 +4,7 @@ import { useFlow, STEPS } from '../context/FlowContext.jsx'
 import SpinWheel from '../components/SpinWheel.jsx'
 import LoadingOverlay from '../components/motion/LoadingOverlay.jsx'
 import { checkEligibility, claimGift } from '../utils/api.js'
+import { CONFIG } from '../config.js'
 
 /**
  * Owns the eligibility check so the loading overlay can stay mounted across
@@ -28,8 +29,8 @@ export default function GiftPage() {
     return () => { active = false }
   }, [visitor.mobile, eligibilityRetry])
 
-  // A score of 0 never reaches the wheel, so there is nothing to check for.
-  const checking = score !== 0 && (eligibility.status === 'checking' || giftsLoading)
+  // Too low a score never reaches the wheel, so there is nothing to check for.
+  const checking = score >= CONFIG.minCorrectToSpin && (eligibility.status === 'checking' || giftsLoading)
 
   function retry() {
     setEligibility({ status: 'checking', error: '' })
@@ -46,34 +47,41 @@ export default function GiftPage() {
 
 /** The three ways the wheel can be withheld, in one consistent shape. */
 function Notice({ icon, title, children, action }) {
+  // One button is centred on its own; two sit side by side.
+  const single = !Array.isArray(action)
   return (
     <div className="panel panel--narrow panel--center">
       <span className="notice__icon" aria-hidden="true">{icon}</span>
       <h2 className="panel__title">{title}</h2>
       <p className="panel__sub">{children}</p>
-      <div className="actions actions--single">{action}</div>
+      <div className={`actions ${single ? 'actions--single' : ''}`}>{action}</div>
     </div>
   )
 }
 
 function GiftScreen({ eligibility, onRetry, checking }) {
-  const { score, gift, setGift, setStep, giftWheel, winnableGifts, reloadGifts, visitor } = useFlow()
+  const { score, gift, setGift, setStep, giftWheel, winnableGifts, reloadGifts, visitor, buildQuiz, reset } = useFlow()
   const [spinning, setSpinning] = useState(false)
   const [claimError, setClaimError] = useState('')
   const claimRef = useRef(null)
 
-  if (score === 0) {
+  if (score < CONFIG.minCorrectToSpin) {
     return (
       <Notice
         icon="🔒"
         title="So close!"
-        action={
-          <button className="btn btn--gold btn--xl" onClick={() => setStep(STEPS.QUIZINTRO)}>
-            Try new questions <span className="btn__arrow" aria-hidden="true">→</span>
-          </button>
-        }
+        action={[
+          <button key="leave" className="btn btn--ghost" onClick={reset}>Leave</button>,
+          <button
+            key="retry"
+            className="btn btn--gold"
+            onClick={() => { buildQuiz(); setStep(STEPS.QUIZ) }}
+          >
+            Try again <span className="btn__arrow" aria-hidden="true">→</span>
+          </button>,
+        ]}
       >
-        You need at least one right answer to unlock the wheel. You'll get a fresh set of questions.
+        You need at least two right answers to unlock the prizes. Do you want to try again?
       </Notice>
     )
   }

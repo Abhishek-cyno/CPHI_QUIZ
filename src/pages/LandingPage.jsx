@@ -2,12 +2,6 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { useFlow, STEPS } from '../context/FlowContext.jsx'
 import { CONFIG } from '../config.js'
 
-const RULES = [
-  { value: String(CONFIG.questionsPerQuiz), label: 'Questions', note: 'drawn at random' },
-  { value: 'No', label: 'Time limit', note: 'play at your pace' },
-  { value: '1', label: 'Spin', note: 'to win a prize' },
-]
-
 const EASE = [0.16, 1, 0.3, 1]
 
 export default function LandingPage() {
@@ -38,11 +32,6 @@ export default function LandingPage() {
           </span>
         </motion.h1>
 
-        <motion.p className="hero__lede" {...rise(0.2)}>
-          Answer three pharma questions at your own pace. Get even one right
-          and you spin the wheel for a prize.
-        </motion.p>
-
         <motion.div className="hero__actions" {...rise(0.28)}>
           <motion.button
             type="button"
@@ -51,44 +40,21 @@ export default function LandingPage() {
             whileHover={reduced ? undefined : { y: -2 }}
             whileTap={reduced ? undefined : { scale: 0.98 }}
           >
-            Play now
+            Test your knowledge
             <span className="btn__arrow" aria-hidden="true">→</span>
           </motion.button>
         </motion.div>
-
-        <motion.ul className="rules" {...rise(0.36)}>
-          {RULES.map((r) => (
-            <li key={r.label} className="rules__item">
-              <span className="rules__value">{r.value}</span>
-              <span className="rules__label">{r.label}</span>
-              <span className="rules__note">{r.note}</span>
-            </li>
-          ))}
-        </motion.ul>
       </div>
 
-      <TeaserWheel reduced={reduced} />
+      <TeaserBulb reduced={reduced} />
     </section>
   )
 }
 
-/* A decorative wheel that turns slowly behind the headline on wide screens
-   — a promise of what's at the end, drawn in the same navy/gold as the real
-   one. Not interactive and not the real prize list; just the shape. */
-const TEASER_SLICES = 12
-const TEASER_COLORS = ['#f4ac3c', '#114f6e', '#ffc768', '#0b3349', '#e8eef2', '#1a6b93']
-
-function TeaserWheel({ reduced }) {
-  const C = 100
-  const R = 92
-  const step = 360 / TEASER_SLICES
-
-  const wedge = (i) => {
-    const a0 = (i * step - 90) * (Math.PI / 180)
-    const a1 = ((i + 1) * step - 90) * (Math.PI / 180)
-    return `M ${C} ${C} L ${C + R * Math.cos(a0)} ${C + R * Math.sin(a0)} A ${R} ${R} 0 0 1 ${C + R * Math.cos(a1)} ${C + R * Math.sin(a1)} Z`
-  }
-
+/* A decorative light bulb beside the headline — the "bright idea" of the
+   quiz, drawn in the same navy and gold as the rest of the app. It glows
+   gently; it is not interactive. */
+function TeaserBulb({ reduced }) {
   return (
     <motion.div
       className="teaser"
@@ -97,20 +63,44 @@ function TeaserWheel({ reduced }) {
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 1, delay: reduced ? 0 : 0.2, ease: EASE }}
     >
-      <span className="teaser__halo" />
-      <motion.svg
-        className="teaser__disc"
-        viewBox="0 0 200 200"
-        animate={reduced ? undefined : { rotate: 360 }}
-        transition={{ duration: 60, repeat: Infinity, ease: 'linear' }}
-      >
-        {Array.from({ length: TEASER_SLICES }).map((_, i) => (
-          <path key={i} d={wedge(i)} fill={TEASER_COLORS[i % TEASER_COLORS.length]} stroke="#04141e" strokeWidth="1.2" />
-        ))}
-        <circle cx={C} cy={C} r={R} fill="none" stroke="#f4ac3c" strokeWidth="3" />
-      </motion.svg>
-      <span className="teaser__hub">?</span>
-      <span className="teaser__pointer" />
+      <motion.span
+        className="teaser__halo"
+        animate={reduced ? undefined : { opacity: [0.65, 1, 0.65], scale: [0.96, 1.04, 0.96] }}
+        transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <svg className="teaser__bulb" viewBox="0 0 200 200">
+        <defs>
+          <radialGradient id="bulb-glass" cx="42%" cy="36%" r="70%">
+            <stop offset="0%" stopColor="#fff4d6" />
+            <stop offset="45%" stopColor="#ffc768" />
+            <stop offset="100%" stopColor="#f4ac3c" />
+          </radialGradient>
+        </defs>
+        {/* rays */}
+        <g stroke="#ffc768" strokeWidth="5" strokeLinecap="round" opacity="0.85">
+          <line x1="100" y1="6" x2="100" y2="22" />
+          <line x1="36" y1="30" x2="47" y2="41" />
+          <line x1="164" y1="30" x2="153" y2="41" />
+          <line x1="10" y1="88" x2="26" y2="88" />
+          <line x1="190" y1="88" x2="174" y2="88" />
+        </g>
+        {/* glass */}
+        <path
+          d="M100 30 C 66 30 44 55 44 86 C 44 106 54 120 66 132 C 72 138 75 145 75 152 L 125 152 C 125 145 128 138 134 132 C 146 120 156 106 156 86 C 156 55 134 30 100 30 Z"
+          fill="url(#bulb-glass)"
+          stroke="#04141e"
+          strokeWidth="3"
+        />
+        {/* filament */}
+        <path d="M86 150 L 86 112 L 94 100 L 100 112 L 106 100 L 114 112 L 114 150" fill="none" stroke="#114f6e" strokeWidth="4" strokeLinejoin="round" strokeLinecap="round" />
+        {/* shine */}
+        <path d="M70 70 C 74 56 84 48 96 46" fill="none" stroke="#ffffff" strokeWidth="6" strokeLinecap="round" opacity="0.7" />
+        {/* base */}
+        <rect x="74" y="152" width="52" height="12" rx="4" fill="#1a6b93" stroke="#04141e" strokeWidth="2" />
+        <rect x="76" y="164" width="48" height="12" rx="4" fill="#114f6e" stroke="#04141e" strokeWidth="2" />
+        <rect x="80" y="176" width="40" height="10" rx="4" fill="#0b3349" stroke="#04141e" strokeWidth="2" />
+        <path d="M90 186 L 110 186 L 104 194 L 96 194 Z" fill="#0b3349" stroke="#04141e" strokeWidth="2" />
+      </svg>
     </motion.div>
   )
 }

@@ -5,7 +5,7 @@ prize wheel. Built from the same bones as the doctor app in `D:\docquiz`, but th
 a **separate project with its own deployment** — nothing here changes that one.
 
 ```
-Landing → Register → Quiz intro → 3 questions → Score → 🎡 Spin → What you won
+Landing → Register → 3 questions → Score (2+ right) → 🎡 Spin → What you won
 ```
 
 ## What is different from the doctor app
@@ -38,7 +38,7 @@ tablet on a stall.
 | Quiz | Stacked options + side progress card | 2×2 answer tiles, result pips per question |
 | Score | Trophy + number | Animated gold score ring |
 | Wheel | Plain wheel in a card | Wheel inside a ring of marquee bulbs that chase while it spins, controls beside it |
-| Finish | Contact form, then thank-you card | No second form: straight to a plain "you won" card with the reference, saved in the background from the registration details |
+| Finish | Contact form, then thank-you card | No second form: straight to a plain "you won" card, saved in the background from the registration details |
 
 Brand values are sampled from `public/images/eqova-logo.png`: navy `#0C3C54` is the
 room, gold `#F4AC3C` is reserved for anything you press and anything you win, grey
@@ -212,7 +212,7 @@ Matching is on the **last 10 digits**, so `+91 98765 43210`, `9876543210` and
   details, or a limited prize could go out more times than it has units.
 - Out-of-stock and withdrawn prizes keep their slice on the wheel (so it does not
   visibly shrink mid-event) but can never be landed on.
-- A score of **0 does not unlock a spin** — at least one correct answer is needed.
+- **At least 2 of 3 correct answers** are needed to unlock a spin (`minCorrectToSpin` in `src/config.js`).
 
 ## Project layout
 

@@ -12,6 +12,9 @@ export const CONFIG = {
   // Number of questions each visitor gets (randomly picked from the bank)
   questionsPerQuiz: 3,
 
+  // Right answers needed to unlock the prize wheel
+  minCorrectToSpin: 2,
+
   // ---- The one and only backend ----
   // Apps Script Web App URL from google-apps-script-cphi.gs. Unlike the
   // doctor app (which talks to three separate scripts), this single

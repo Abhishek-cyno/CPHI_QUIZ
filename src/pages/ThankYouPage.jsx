@@ -13,7 +13,8 @@ import { submitEntry } from '../utils/api.js'
  * The prize is shown immediately rather than after the save, and that is
  * honest: claimGift already locked the prize onto this visitor's row when
  * the wheel stopped. What this save adds is the score, the answers and the
- * confirmation email, so only the reference waits for it.
+ * confirmation email. The server still returns a reference, which is kept
+ * in the flow state (it marks the entry as saved) but no longer shown.
  */
 export default function ThankYouPage() {
   const { visitor, gift, score, questions, answers, entry, setEntry, reset } = useFlow()
@@ -84,17 +85,11 @@ export default function ThankYouPage() {
         <>
           <p className="won__label">{isSuper ? 'You hit the jackpot' : 'You won'}</p>
           <p className="won__prize">{gift.title}</p>
-          <p className="panel__sub">Collect it at the Eqova stall.</p>
         </>
       )}
 
       <div className="won__status" role="status" aria-live="polite">
         {status === 'saving' && <span className="won__muted">Saving your entry…</span>}
-        {status === 'saved' && entry.ref && (
-          <span>
-            Reference <strong className="won__ref">{entry.ref}</strong>
-          </span>
-        )}
         {status === 'error' && (
           <>
             <span className="won__error">{error}</span>
@@ -111,7 +106,7 @@ export default function ThankYouPage() {
         {/* Held back until the save lands, so the stall can't reset the
             tablet onto the next player while this entry is still in flight. */}
         <button className="btn btn--gold btn--xl" onClick={reset} disabled={status === 'saving'}>
-          Done — next player
+          Start over
         </button>
       </div>
     </div>

@@ -15,7 +15,6 @@ const PHASES = ['Details', 'Quiz', 'Spin', 'Prize']
 // How far through the whole run each step is: [phase index, fill of that phase].
 const STEP_POSITION = {
   [STEPS.REGISTER]: [0, 0.5],
-  [STEPS.QUIZINTRO]: [1, 0.1],
   [STEPS.QUIZ]: [1, 0.55],
   [STEPS.COMPLETE]: [1, 1],
   [STEPS.GIFT]: [2, 0.5],

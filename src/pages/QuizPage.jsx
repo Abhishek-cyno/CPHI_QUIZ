@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useFlow, STEPS } from '../context/FlowContext.jsx'
+import { CONFIG } from '../config.js'
 
 const LETTERS = ['A', 'B', 'C', 'D']
 
@@ -37,9 +38,10 @@ export default function QuizPage() {
       setLocked(false)
       return
     }
-    // A score of zero goes straight to the gift screen's "try again" state
-    // instead of celebrating a result there is nothing to spin for.
-    setStep(results.some(Boolean) ? STEPS.COMPLETE : STEPS.GIFT)
+    // Too few right answers goes straight to the gift screen's "so close"
+    // state instead of celebrating a result there is nothing to spin for.
+    const right = results.filter(Boolean).length
+    setStep(right >= CONFIG.minCorrectToSpin ? STEPS.COMPLETE : STEPS.GIFT)
   }
 
   function optionState(i) {

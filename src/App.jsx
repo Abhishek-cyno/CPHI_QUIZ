@@ -6,7 +6,6 @@ import ProgressRail from './components/ProgressRail.jsx'
 
 import LandingPage from './pages/LandingPage.jsx'
 import RegisterPage from './pages/RegisterPage.jsx'
-import QuizIntroPage from './pages/QuizIntroPage.jsx'
 import QuizPage from './pages/QuizPage.jsx'
 import CompletePage from './pages/CompletePage.jsx'
 import GiftPage from './pages/GiftPage.jsx'
@@ -15,7 +14,6 @@ import ThankYouPage from './pages/ThankYouPage.jsx'
 const screens = {
   [STEPS.LANDING]: LandingPage,
   [STEPS.REGISTER]: RegisterPage,
-  [STEPS.QUIZINTRO]: QuizIntroPage,
   [STEPS.QUIZ]: QuizPage,
   [STEPS.COMPLETE]: CompletePage,
   [STEPS.GIFT]: GiftPage,

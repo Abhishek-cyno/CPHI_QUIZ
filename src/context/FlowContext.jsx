@@ -44,7 +44,6 @@ function hasQuestions(q) {
 export const STEPS = {
   LANDING: 'landing',
   REGISTER: 'register',
-  QUIZINTRO: 'quizintro',
   QUIZ: 'quiz',
   COMPLETE: 'complete',
   GIFT: 'gift',

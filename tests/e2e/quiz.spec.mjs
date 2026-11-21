@@ -89,6 +89,7 @@ test('register, play, spin and see the prize — saved once with every field', a
   await expect(page.locator('.won__ref')).toHaveCount(0)
   await expect(page.getByText(REF)).toHaveCount(0)
   await expect(page.getByText(/Collect it/)).toHaveCount(0)
+  await expect(page.locator('.won__status'), 'no empty box once saved').toBeHidden()
   await expectCentred(page, page.getByRole('button', { name: /Start over/ }))
   await expectNoSideScroll(page)
 

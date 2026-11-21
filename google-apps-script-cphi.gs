@@ -11,6 +11,7 @@
  *
  *   CONTENT sheet   reads  QuestionsCPHI     <- new tab
  *   DATA sheet      writes CphiEntries       <- new tab
+ *                   writes GiftVouchers      <- voucher codes (Status column)
  *                   reads  Gifts, Settings   <- SHARED with the doctor app
  *
  * Because prize stock lives in the shared Gifts tab, a limited prize runs
@@ -40,8 +41,8 @@
  *
  * 5. Extensions > Apps Script on either sheet. Delete any code, paste ALL
  *    of this file, then Run > setupSheets once. Approve the permission
- *    prompt (Sheets, Gmail, external requests) as the account whose Gmail
- *    should send the confirmations.
+ *    prompt (Sheets, external requests). No mail is sent from this Google
+ *    account: every email goes out through Pabbly (see EMAIL below).
  *
  * 6. Deploy > New deployment > type "Web app".
  *        Execute as:      Me
@@ -73,16 +74,29 @@ var ENTRIES_TAB = 'CphiEntries';
 var GIFTS_TAB = 'Gifts';        // shared with the doctor app
 var SETTINGS_TAB = 'Settings';  // shared with the doctor app
 
-// Confirmation email to the visitor, sent on the final submit. MailApp
-// sends as whichever Google account holds the live DEPLOYMENT (not
-// necessarily whoever owns this file) and there is no from-address
-// override — so to send as a particular address, deploy from that account.
-//
-// Gmail's daily quota is ~100 recipients on a free account and 1,500 on
-// Workspace. Each entry sends one mail to the visitor, plus one to
-// `notifyEmail` if that Setting is filled in — so leaving notifyEmail
-// blank doubles how many entries a day you can mail.
+// EMAIL
+// The thank-you email (with the voucher code, for voucher winners) is NOT
+// sent from this Google account. The script builds the finished email —
+// subject, HTML and plain text — and posts it to a Pabbly Connect webhook,
+// whose "Send Email" step sends it from info@eqova.in. Put that webhook's
+// URL in the Settings tab under `cphiEmailWebhook`. With it blank, no email
+// is sent at all (and voucher codes stay RESERVED, never CLAIMED).
 var SEND_EMAILS = true;
+
+// Shown in the email: "Thank you for visiting Eqova Medicare at <this>".
+var EMAIL_EVENT_NAME = 'CPHI India 2026';
+
+// Voucher codes, one row each:
+//   CouponID | Type | Code | Pin | Status | Terms | ClaimedBy
+// Optional extra columns, used in the email when present:
+//   Amount | Expiry (or "Valid until")
+// Columns are found by their header, so their order does not matter.
+//
+// Status runs AVAILABLE -> RESERVED (the wheel landed on it) -> CLAIMED
+// (the email carrying it was handed to Pabbly). ClaimedBy records who.
+// A prize on the Gifts tab counts as a voucher when its title contains a
+// Type from this tab — e.g. "Amazon Voucher ₹500" draws from the Amazon rows.
+var VOUCHERS_TAB = 'GiftVouchers';
 
 // How long the question bank and prize catalog may be served from cache.
 // Run clearCaches() after editing a tab to make the change show up at once.
@@ -362,10 +376,20 @@ function claimGift(data) {
       if (stock !== null && stock <= 0) {
         return json({ ok: false, reason: 'outofstock', error: 'That prize just ran out.' });
       }
+
+      // A voucher prize is only won if there is a code left to send.
+      var ref = prior ? prior.ref : makeRef();
+      var vouchers = readVouchers();
+      var type = voucherTypeFor(title, vouchers);
+      if (type && reserveVoucher(vouchers, type, ref, data) === -1) {
+        console.error('No AVAILABLE ' + type + ' vouchers left in ' + VOUCHERS_TAB + ' — refusing "' + title + '".');
+        return json({ ok: false, reason: 'outofstock', error: 'That prize just ran out.' });
+      }
+
       if (stock !== null) sheet.getRange(i + 2, 8).setValue(stock - 1);
 
       var claimRow = [
-        new Date(), prior ? prior.ref : makeRef(), 'prize-claimed',
+        new Date(), ref, 'prize-claimed',
         sheetText(data.name), sheetText(data.email), sheetPhone(data.phone),
         '', '', '', title, '[]',
         sheetText(data.organization), sheetText(data.designation),
@@ -442,14 +466,12 @@ function submitEntry(data) {
   // queue up everyone else at the stall behind this one visitor.
   if (SEND_EMAILS) {
     try {
-      sendEntryEmails(data, ref);
+      sendEntryEmail(data, ref);
     } catch (mailErr) {
-      // Most often this is the daily Gmail quota, which resets around
-      // midnight Pacific — the symptom is mail working in the morning and
-      // going quiet later in the day. Logged loudly because the visitor
-      // still sees a success screen either way.
-      console.error('EMAIL FAILED for ' + ref + ': ' + mailErr +
-        ' (remaining quota today: ' + safeQuota() + ')');
+      // Logged loudly because the visitor still sees a success screen
+      // either way. A voucher stays RESERVED to them, so running
+      // sendPendingVouchers() later delivers it.
+      console.error('EMAIL FAILED for ' + ref + ': ' + mailErr);
     }
   }
 
@@ -466,8 +488,8 @@ function validate(data) {
   if (!data) return 'Empty request.';
   if (!String(data.name || '').trim()) return 'Name is required.';
   if (!String(data.organization || '').trim()) return 'Organization is required.';
-  if (!String(data.designation || '').trim()) return 'Designation is required.';
-  // Email is optional. Only a value that IS given has to look like one.
+  // Designation is optional on the form. Email is required on the form,
+  // but only checked for shape here so an out-of-date tablet still saves.
   var email = String(data.email || '').trim();
   if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return 'That email address does not look right.';
   if (digitsOnly(data.phone).length < 10) return 'A valid WhatsApp number is required.';
@@ -533,85 +555,360 @@ function entryProgress(row) {
 //  Email + WhatsApp
 // ============================================================
 
-function sendEntryEmails(data, ref) {
-  var settings = readSettings();
-  var brand = settings.brandName || 'Eqova Medicare';
-  var event = settings.cphiEventName || 'CPHI';
+// ============================================================
+//  Vouchers (GiftVouchers tab)
+// ============================================================
 
-  // Email is optional, so a visitor who left it blank simply gets no
-  // confirmation — their ticket on screen is the record. Logged so an empty
-  // inbox is never mistaken for the quota or deployment problems.
-  if (!String(data.email || '').trim()) {
-    console.info('No email for ' + ref + ' — skipping the visitor confirmation.');
-  } else MailApp.sendEmail({
-    to: data.email,
-    name: brand,
-    subject: 'Your ' + event + ' quiz entry is confirmed — ' + ref,
-    htmlBody: entryEmailHtml(data, ref, brand, event),
-    body: [
-      'Hi ' + (data.name || 'there') + ',',
-      '',
-      'Thanks for taking the ' + brand + ' quiz at ' + event + '!',
-      '',
-      'Your score: ' + data.score + '/' + data.total + ' (' + data.percent + '%)',
-      'Your prize: ' + (data.gift || '—'),
-      'Reference: ' + ref,
-      '',
-      'Show this reference at our stall to collect your prize.',
-      '',
-      brand,
-    ].join('\n'),
-  });
+/**
+ * The voucher tab, with its columns found by header name. Null when the tab
+ * is missing or lacks a column the voucher flow cannot work without.
+ */
+function readVouchers() {
+  var sheet = tab(dataSheet(), VOUCHERS_TAB);
+  if (!sheet || sheet.getLastRow() < 1) return null;
 
-  // Each of these costs another recipient against the daily quota, so a
-  // blank notifyEmail doubles how many entries a day can be mailed.
-  if (settings.notifyEmail) {
-    MailApp.sendEmail({
-      to: settings.notifyEmail,
-      name: brand + ' ' + event,
-      subject: 'New ' + event + ' entry: ' + (data.name || 'Visitor'),
-      htmlBody: [
-        '<h3>New ' + escapeHtml(event) + ' quiz entry</h3>',
-        '<table cellpadding="6" style="border-collapse:collapse;font:14px system-ui">',
-        row('Reference', ref),
-        row('Name', data.name),
-        row('Organization', data.organization),
-        row('Designation', data.designation),
-        row('Email', data.email || '—'),
-        row('WhatsApp', data.phone),
-        row('Quiz score', data.score + '/' + data.total + ' (' + data.percent + '%)'),
-        row('Prize to hand over', data.gift || '—'),
-        '</table>',
-      ].join(''),
+  var width = Math.max(7, sheet.getLastColumn ? sheet.getLastColumn() : 12);
+  var header = sheet.getRange(1, 1, 1, width).getDisplayValues()[0];
+  var col = {};
+  var names = {
+    type: ['type'], code: ['code', 'vouchernumber', 'cardnumber'], pin: ['pin'],
+    status: ['status'], terms: ['terms', 'termsofuse', 'tnc'], claimedBy: ['claimedby'],
+    couponId: ['couponid', 'id'], amount: ['amount', 'value', 'denomination'],
+    expiry: ['expiry', 'expirydate', 'validuntil', 'validtill'],
+  };
+  header.forEach(function (h, i) {
+    var key = String(h || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    Object.keys(names).forEach(function (field) {
+      if (col[field] === undefined && names[field].indexOf(key) !== -1) col[field] = i;
     });
+  });
+  var required = ['type', 'code', 'status', 'claimedBy'];
+  for (var r = 0; r < required.length; r++) {
+    if (col[required[r]] === undefined) {
+      console.error('The ' + VOUCHERS_TAB + ' tab has no "' + required[r] + '" column.');
+      return null;
+    }
   }
+
+  var count = Math.max(0, sheet.getLastRow() - 1);
+  var rows = count ? sheet.getRange(2, 1, count, width).getDisplayValues() : [];
+  // A Terms cell may be a link whose visible text is not the URL itself.
+  var rich = null;
+  if (count && col.terms !== undefined) {
+    try { rich = sheet.getRange(2, col.terms + 1, count, 1).getRichTextValues(); } catch (e) { rich = null; }
+  }
+  return { sheet: sheet, col: col, rows: rows, rich: rich };
 }
 
-function entryEmailHtml(data, ref, brand, event) {
-  return [
-    '<div style="font:15px/1.6 system-ui,-apple-system,Segoe UI,sans-serif;color:#0f172a;max-width:520px">',
-    '<div style="background:#0c3c54;color:#fff;padding:22px 24px;border-radius:12px 12px 0 0;border-bottom:3px solid #f4ac3c">',
-    '<div style="font-size:20px;font-weight:700">Entry confirmed ✓</div>',
-    '<div style="opacity:.85;font-size:13px;margin-top:4px">' + escapeHtml(brand) + ' · ' + escapeHtml(event) + '</div>',
-    '</div>',
-    '<div style="border:1px solid #e2e8f0;border-top:0;border-radius:0 0 12px 12px;padding:24px">',
-    '<p>Hi ' + escapeHtml(data.name || 'there') + ',</p>',
-    '<p>Thanks for taking our quiz! Here is how you did:</p>',
-    '<table cellpadding="8" style="border-collapse:collapse;background:#fef8ed;border-radius:10px;width:100%;margin:16px 0">',
-    row('✅ Score', data.score + ' / ' + data.total + ' (' + data.percent + '%)'),
-    row('🎁 Prize', data.gift || '—'),
-    row('#️⃣ Reference', ref),
-    '</table>',
-    '<p style="color:#64748b;font-size:13px">Show this reference at the ' + escapeHtml(brand) +
-      ' stall to collect your prize. Reply to this email if you need a hand.</p>',
-    '<p style="margin-bottom:0">— ' + escapeHtml(brand) + '</p>',
-    '</div></div>',
-  ].join('');
+function voucherCell(v, i, field) {
+  return v.col[field] === undefined ? '' : String(v.rows[i][v.col[field]] || '').trim();
 }
 
-function row(label, value) {
-  return '<tr><td style="color:#64748b">' + label + '</td><td><b>' +
-    escapeHtml(String(value == null ? '' : value)) + '</b></td></tr>';
+function voucherStatus(v, row) {
+  return String(row[v.col.status] || '').trim().toUpperCase();
+}
+
+/** "Amazon Voucher ₹500" -> "Amazon", if Amazon is a Type on the voucher tab. */
+function voucherTypeFor(giftTitle, v) {
+  var title = String(giftTitle || '').toLowerCase();
+  if (!v || !title) return null;
+  for (var i = 0; i < v.rows.length; i++) {
+    var type = voucherCell(v, i, 'type');
+    if (type && title.indexOf(type.toLowerCase()) !== -1) return type;
+  }
+  return null;
+}
+
+/**
+ * The voucher row this ref holds (RESERVED or CLAIMED), or -1.
+ *
+ * Status is what counts, not ClaimedBy: setting a row back to AVAILABLE in
+ * the sheet frees that code for the next winner even if the old ClaimedBy
+ * text is left in place — it is simply overwritten when the code is reused.
+ */
+function voucherIndexFor(v, ref) {
+  for (var i = 0; i < v.rows.length; i++) {
+    var status = voucherStatus(v, v.rows[i]);
+    if (status !== 'RESERVED' && status !== 'CLAIMED') continue;
+    if (voucherCell(v, i, 'claimedBy').indexOf(ref + ' ') === 0) return i;
+  }
+  return -1;
+}
+
+/**
+ * Holds the next AVAILABLE code of this type for this visitor. Call it with
+ * the script lock held. Returns the row index, or -1 if none are left.
+ * Idempotent: a visitor who already holds a code keeps the same one.
+ */
+function reserveVoucher(v, type, ref, data) {
+  var held = voucherIndexFor(v, ref);
+  if (held !== -1) return held;
+
+  for (var i = 0; i < v.rows.length; i++) {
+    if (voucherCell(v, i, 'type').toLowerCase() !== type.toLowerCase()) continue;
+    if (voucherStatus(v, v.rows[i]) !== 'AVAILABLE') continue;
+    var who = claimedByText(ref, data);
+    v.sheet.getRange(i + 2, v.col.status + 1).setValue('RESERVED');
+    v.sheet.getRange(i + 2, v.col.claimedBy + 1).setValue(who);
+    v.rows[i][v.col.status] = 'RESERVED';
+    v.rows[i][v.col.claimedBy] = who;
+    return i;
+  }
+  return -1;
+}
+
+/** "CP-AB12CD · Asha Verma · 919876543210 · asha@x.com · 22/11/2026 14:05" — starts with the ref, which is how it is looked up. */
+function claimedByText(ref, data) {
+  var when = '';
+  try { when = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'dd/MM/yyyy HH:mm'); } catch (e) { when = ''; }
+  return sheetText([ref, data.name, sheetPhone(data.phone), data.email, when]
+    .map(function (x) { return String(x || '').trim(); })
+    .filter(function (x) { return x; })
+    .join(' · '));
+}
+
+function voucherDetails(v, i, giftTitle) {
+  var terms = voucherCell(v, i, 'terms');
+  if (!/^https?:\/\//i.test(terms) && v.rich && v.rich[i] && v.rich[i][0]) {
+    try { terms = v.rich[i][0].getLinkUrl() || terms; } catch (e) {}
+  }
+  var amount = voucherCell(v, i, 'amount') || amountFromTitle(giftTitle);
+  return {
+    type: voucherCell(v, i, 'type'),
+    code: voucherCell(v, i, 'code'),
+    pin: voucherCell(v, i, 'pin'),
+    amount: String(amount || '').replace(/^₹\s*/, ''),
+    expiry: voucherCell(v, i, 'expiry'),
+    terms: /^https?:\/\//i.test(terms) ? terms : '',
+  };
+}
+
+/** "Amazon Voucher ₹500" / "Rs 500 Myntra card" -> "500". */
+function amountFromTitle(title) {
+  var m = String(title || '').match(/(?:₹|rs\.?|inr)\s*([\d,]+)/i) || String(title || '').match(/([\d,]+)\s*(?:₹|rs\b|inr\b)/i);
+  return m ? m[1] : '';
+}
+
+// ============================================================
+//  Email (sent by Pabbly, from info@eqova.in)
+// ============================================================
+
+/**
+ * Builds the visitor's email and hands it to the Pabbly webhook. For a
+ * voucher prize it carries the visitor's reserved code, and the code is
+ * marked CLAIMED once Pabbly accepts it. Safe to call again for the same
+ * ref: the same code is re-sent, never a second one.
+ */
+function sendEntryEmail(data, ref) {
+  var settings = readSettings();
+  var to = String(data.email || '').trim();
+  if (!to) {
+    console.info('No email for ' + ref + ' — skipping the visitor email.');
+    return { ok: false, skipped: true };
+  }
+
+  var vouchers = readVouchers();
+  var type = voucherTypeFor(data.gift, vouchers);
+  var index = -1;
+  if (type) {
+    index = voucherIndexFor(vouchers, ref);
+    if (index === -1) {
+      // Won before vouchers were reserved at spin time — reserve one now.
+      var lock = LockService.getScriptLock();
+      if (lock.tryLock(30000)) {
+        try {
+          vouchers = readVouchers();
+          index = reserveVoucher(vouchers, type, ref, data);
+        } finally {
+          try { lock.releaseLock(); } catch (ignored) {}
+        }
+      }
+    }
+    if (index === -1) {
+      console.error('VOUCHER MISSING for ' + ref + ': no ' + type + ' code could be reserved. Email not sent.');
+      return { ok: false, error: 'no voucher' };
+    }
+  }
+
+  var webhook = settings.cphiEmailWebhook;
+  if (!webhook) {
+    console.error('No cphiEmailWebhook in Settings — email for ' + ref + ' not sent' +
+      (type ? ' (voucher stays RESERVED).' : '.'));
+    return { ok: false, error: 'no webhook' };
+  }
+
+  var voucher = index === -1 ? null : voucherDetails(vouchers, index, data.gift);
+  var mail = buildEmail(data, voucher, settings);
+  var brand = settings.brandName || 'Eqova Medicare';
+  var payload = {
+    event: 'cphi_email',
+    ref: ref,
+    to: to,
+    toName: data.name || '',
+    fromName: brand,
+    replyTo: settings.cphiContactEmail || 'info@eqova.in',
+    subject: mail.subject,
+    html: mail.html,
+    text: mail.text,
+    prize: data.gift || '',
+    isVoucher: !!voucher,
+    voucherType: voucher ? voucher.type : '',
+    voucherCode: voucher ? voucher.code : '',
+    voucherPin: voucher ? voucher.pin : '',
+    voucherAmount: voucher ? voucher.amount : '',
+    voucherExpiry: voucher ? voucher.expiry : '',
+    voucherTerms: voucher ? voucher.terms : '',
+  };
+
+  var res = UrlFetchApp.fetch(webhook, {
+    method: 'post',
+    contentType: 'application/json',
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true,
+  });
+  var code = res.getResponseCode();
+  var body = String(res.getContentText() || '');
+  if (code < 200 || code >= 300 || /"status"\s*:\s*"error"/i.test(body)) {
+    // Never log the payload: it holds the voucher code.
+    console.error('Pabbly email webhook rejected ' + ref + ' with HTTP ' + code + ': ' + body.slice(0, 300));
+    return { ok: false, error: 'HTTP ' + code };
+  }
+
+  if (voucher) {
+    vouchers.sheet.getRange(index + 2, vouchers.col.status + 1).setValue('CLAIMED');
+    console.info('Voucher ' + (voucherCell(vouchers, index, 'couponId') || ('row ' + (index + 2))) + ' CLAIMED by ' + ref + '.');
+  }
+  return { ok: true };
+}
+
+/**
+ * Retries every voucher still RESERVED — e.g. the email webhook was paused,
+ * or the visitor left before the last screen. Run it from the editor, or on
+ * a time-driven trigger. Codes already CLAIMED are never re-sent from here.
+ */
+function sendPendingVouchers() {
+  var v = readVouchers();
+  if (!v) { Logger.log('No usable ' + VOUCHERS_TAB + ' tab.'); return; }
+  var sent = 0, failed = 0;
+  for (var i = 0; i < v.rows.length; i++) {
+    if (voucherStatus(v, v.rows[i]) !== 'RESERVED') continue;
+    var ref = voucherCell(v, i, 'claimedBy').split(' ')[0];
+    var entry = entryByRef(ref);
+    if (!entry || !entry.email) {
+      Logger.log('Row ' + (i + 2) + ': no entry with an email for ' + ref + ' — skipped.');
+      failed++;
+      continue;
+    }
+    var result = sendEntryEmail(entry, ref);
+    if (result.ok) sent++; else failed++;
+  }
+  Logger.log('Pending vouchers: ' + sent + ' sent, ' + failed + ' not sent.');
+}
+
+function entryByRef(ref) {
+  if (!ref) return null;
+  var sheet = entriesSheet();
+  if (sheet.getLastRow() < 2) return null;
+  var rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, ENTRY_HEADERS.length).getDisplayValues();
+  for (var i = 0; i < rows.length; i++) {
+    var r = rows[i];
+    if (String(r[COL.ref]).trim() !== ref) continue;
+    return {
+      name: r[COL.name], email: String(r[COL.email] || '').trim(), phone: r[COL.phone],
+      organization: r[COL.organization], designation: r[COL.designation], gift: r[COL.prize],
+    };
+  }
+  return null;
+}
+
+/** How to redeem each voucher Type. Anything else gets a generic line. */
+var CLAIM_STEPS = {
+  amazon: [
+    'Log in to your account at amazon.in or open the Amazon app.',
+    'Go to Amazon Pay → Add Gift Card.',
+    'Enter the code shown above and click Add to Balance.',
+  ],
+  myntra: [
+    'Log in to your account at myntra.com or open the Myntra app.',
+    'Go to Profile → Gift Cards → Add Gift Card.',
+    'Enter the card number and PIN shown above and add it to your Myntra Credit.',
+  ],
+  uber: [
+    'Open the Uber app and tap Account → Wallet.',
+    'Tap Add Payment Method → Gift Card.',
+    'Enter the code shown above and tap Add.',
+  ],
+};
+
+/** The visitor email, in the agreed format. `voucher` is null for other prizes. */
+function buildEmail(data, voucher, settings) {
+  var brand = settings.brandName || 'Eqova Medicare';
+  var name = String(data.name || '').trim() || 'there';
+  var footer = [
+    settings.cphiContactPhone ? '📞 ' + settings.cphiContactPhone : '',
+    '✉️ ' + (settings.cphiContactEmail || 'info@eqova.in'),
+    settings.cphiWebsite ? '🌐 ' + settings.cphiWebsite : '',
+  ].filter(function (x) { return x; });
+
+  var text = [];
+  var html = [];
+  var P = 'margin:0 0 14px';
+  var para = function (t) { text.push(t, ''); html.push('<p style="' + P + '">' + escapeHtml(t) + '</p>'); };
+
+  para('Dear ' + name + ',');
+  para('Thank you for visiting ' + brand + ' at ' + EMAIL_EVENT_NAME + ' and taking part in our quiz.');
+
+  if (voucher) {
+    var article = /^[aeiou]/i.test(voucher.type) ? 'an' : 'a';
+    var worth = voucher.amount ? ' worth ₹' + voucher.amount : '';
+    var headline = 'Congratulations, you\'ve won ' + article + ' ' + voucher.type + ' voucher' + worth + '!';
+    var details = [['Voucher Number', voucher.code]];
+    if (voucher.pin) details.push(['PIN', voucher.pin]);
+    if (voucher.expiry) details.push(['Valid until', voucher.expiry]);
+    var steps = CLAIM_STEPS[voucher.type.toLowerCase()] ||
+      ['Redeem it on the ' + voucher.type + ' website or app using the details shown above.'];
+    var rule = 'It can\'t be exchanged for cash, and it can\'t be reissued if lost or shared.';
+
+    text.push(headline, '', 'Your voucher details');
+    details.forEach(function (d) { text.push(d[0] + ': ' + d[1]); });
+    text.push('', 'How to claim');
+    steps.forEach(function (s, n) { text.push((n + 1) + '. ' + s); });
+    text.push('', 'Terms: ' + (voucher.terms ? 'Please do read the terms of use (' + voucher.terms + '). ' : '') + rule, '');
+
+    html.push(
+      '<p style="' + P + ';font-size:17px;font-weight:700;color:#0c3c54">' + escapeHtml(headline) + '</p>',
+      '<div style="border:1px solid #f4ac3c;background:#fef8ed;border-radius:10px;padding:14px 18px;margin:0 0 16px">',
+      '<div style="font-weight:700;margin-bottom:6px">Your voucher details</div>',
+      details.map(function (d) {
+        return '<div>' + escapeHtml(d[0]) + ': <b style="font-family:Consolas,Menlo,monospace;letter-spacing:.5px">' + escapeHtml(d[1]) + '</b></div>';
+      }).join(''),
+      '</div>',
+      '<div style="font-weight:700;margin-bottom:4px">How to claim</div>',
+      '<ol style="margin:0 0 14px;padding-left:20px">',
+      steps.map(function (s) { return '<li>' + escapeHtml(s) + '</li>'; }).join(''),
+      '</ol>',
+      '<p style="' + P + ';font-size:13px;color:#475569">Terms: ' +
+        (voucher.terms ? 'Please do read the <a href="' + escapeHtml(voucher.terms) + '">terms of use</a>. ' : '') +
+        escapeHtml(rule) + '</p>'
+    );
+  }
+
+  para('If you have any current or upcoming requirements, or would like to explore a collaboration or partnership, we\'d be happy to hear from you and see how we can help.');
+  para('Please let us know a convenient time to connect. We look forward to staying in touch.');
+
+  text.push('Kind regards,', 'Team ' + brand, '', footer.join(' | '));
+  html.push(
+    '<p style="margin:0">Kind regards,<br>Team ' + escapeHtml(brand) + '</p>',
+    '<p style="margin:16px 0 0;font-size:13px;color:#475569">' + footer.map(escapeHtml).join(' &nbsp;|&nbsp; ') + '</p>'
+  );
+
+  return {
+    subject: voucher
+      ? 'Your ' + voucher.type + ' voucher from ' + brand + ' — ' + EMAIL_EVENT_NAME
+      : 'Thank you for visiting ' + brand + ' at ' + EMAIL_EVENT_NAME,
+    html: '<div style="font:15px/1.6 system-ui,-apple-system,Segoe UI,Arial,sans-serif;color:#0f172a;max-width:560px">' + html.join('') + '</div>',
+    text: text.join('\n'),
+  };
 }
 
 /**
@@ -760,7 +1057,11 @@ function setupSheets() {
   var settings = tab(ss, SETTINGS_TAB);
   if (settings) {
     var existing = readSettings();
-    var wanted = [['cphiEventName', 'CPHI'], ['cphiPabblyWebhook', '']];
+    var wanted = [
+      ['cphiEventName', 'CPHI'], ['cphiPabblyWebhook', ''],
+      ['cphiEmailWebhook', ''], ['cphiContactPhone', ''],
+      ['cphiContactEmail', 'info@eqova.in'], ['cphiWebsite', ''],
+    ];
     wanted.forEach(function (pair) {
       if (!(pair[0] in existing)) {
         settings.appendRow(pair);
@@ -768,8 +1069,13 @@ function setupSheets() {
       }
     });
   } else {
-    Logger.log('No ' + SETTINGS_TAB + ' tab found — brand name and notifyEmail will fall back to defaults.');
+    Logger.log('No ' + SETTINGS_TAB + ' tab found — brand name and email footer will fall back to defaults.');
   }
+
+  var vouchers = readVouchers();
+  Logger.log(vouchers
+    ? 'Found the ' + VOUCHERS_TAB + ' tab: ' + vouchers.rows.filter(function (r) { return voucherStatus(vouchers, r) === 'AVAILABLE'; }).length + ' codes AVAILABLE.'
+    : 'WARNING: no ' + VOUCHERS_TAB + ' tab (or a column is missing) — voucher prizes will send no code.');
 
   var content = tab(contentSheet(), QUESTIONS_TAB);
   Logger.log(content
@@ -917,7 +1223,3 @@ function escapeHtml(value) {
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-/** Used only in the email failure log, so it must never throw itself. */
-function safeQuota() {
-  try { return MailApp.getRemainingDailyQuota(); } catch (e) { return 'unknown'; }
-}

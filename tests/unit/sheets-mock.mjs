@@ -30,6 +30,7 @@ export function makeSheet(name, rows = []) {
       return n
     },
     getMaxRows: () => 1000,
+    getLastColumn: () => Math.max(0, ...cells.map((r) => r.length)),
     insertRowBefore(r) { cells.splice(r - 1, 0, []) },
     setFrozenRows(n) { sheet.frozenRows = n },
     appendRow(values) { cells.splice(sheet.getLastRow(), 0, values.map(storeCell)) },
@@ -64,7 +65,7 @@ export function makeSheet(name, rows = []) {
  * Loads google-apps-script-cphi.gs against fresh fake services and returns
  * its top-level functions plus handles on the fakes.
  */
-export function loadBackend({ entries, gifts, settings, questions } = {}) {
+export function loadBackend({ entries, gifts, settings, questions, vouchers, webhookStatus = 200 } = {}) {
   const sheets = {
     CphiEntries: entries === null ? null : makeSheet('CphiEntries', entries ?? [[
       'Entered At', 'Ref', 'Status', 'Name', 'Email', 'Phone', 'Score', 'Total', 'Percent',
@@ -78,7 +79,9 @@ export function loadBackend({ entries, gifts, settings, questions } = {}) {
     ]),
     Settings: makeSheet('Settings', settings ?? [
       ['key', 'value'], ['brandName', 'Eqova Medicare'], ['cphiEventName', 'CPHI'], ['cphiPabblyWebhook', ''],
+      ['cphiEmailWebhook', 'https://pabbly.test/email'], ['cphiContactEmail', 'info@eqova.in'],
     ]),
+    GiftVouchers: vouchers === undefined ? null : makeSheet('GiftVouchers', vouchers),
     QuestionsCPHI: makeSheet('QuestionsCPHI', questions ?? [
       ['id', 'question', 'option1', 'option2', 'option3', 'option4', 'answer'],
       ['q1', 'Two plus two?', '3', '4', '5', '6', '1'],
@@ -99,7 +102,15 @@ export function loadBackend({ entries, gifts, settings, questions } = {}) {
     CacheService: { getScriptCache: () => ({ get: (k) => cache.get(k) ?? null, put: (k, v) => cache.set(k, v), remove: (k) => cache.delete(k) }) },
     ContentService: { createTextOutput: (text) => ({ setMimeType: () => ({ text }) }), MimeType: { JSON: 'json' } },
     MailApp: { sendEmail: (m) => mail.push(m), getRemainingDailyQuota: () => 100 },
-    UrlFetchApp: { fetch: (url, opts) => { fetches.push({ url, opts }); return { getResponseCode: () => 200, getContentText: () => '' } } },
+    // `webhookStatus` may be a number or a function of the call count, so a
+    // test can fail the first email and let a retry through.
+    UrlFetchApp: {
+      fetch: (url, opts) => {
+        fetches.push({ url, opts, payload: JSON.parse(opts.payload) })
+        const status = typeof webhookStatus === 'function' ? webhookStatus(fetches.length) : webhookStatus
+        return { getResponseCode: () => status, getContentText: () => (status === 200 ? '{"status":"success"}' : 'paused') }
+      },
+    },
     Logger: { log: (m) => logs.push(String(m)) },
     console: { log: (m) => logs.push(String(m)), info: (m) => logs.push(String(m)), warn: (m) => logs.push(String(m)), error: (m) => logs.push(String(m)) },
     Date, JSON, Math, String, Number, Object, Array, RegExp, parseInt, isNaN, isFinite,
@@ -114,6 +125,8 @@ export function loadBackend({ entries, gifts, settings, questions } = {}) {
     sheets,
     mail,
     fetches,
+    // Only the emails handed to the Pabbly email webhook.
+    get emails() { return fetches.filter((f) => f.url === 'https://pabbly.test/email').map((f) => f.payload) },
     logs,
     get: (params) => call(context.doGet({ parameter: params })),
     post: (body) => call(context.doPost({ postData: { contents: JSON.stringify(body) } })),

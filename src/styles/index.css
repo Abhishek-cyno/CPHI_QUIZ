@@ -899,6 +899,8 @@ select.field__input option { background: var(--bg-2); color: var(--text); }
   font-size: 14px;
   color: var(--text-2);
 }
+/* Once the entry is saved there is nothing to say here, so the box goes. */
+.won__status:empty { display: none; }
 .won__ref { font-family: var(--mono); font-size: 17px; letter-spacing: 0.04em; color: var(--text); margin-left: 6px; }
 .won__muted { font-size: 13.5px; color: var(--text-3); margin-top: 8px; }
 /* Wrap a long address only when it truly doesn't fit — break-all split

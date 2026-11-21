@@ -67,7 +67,7 @@ A pull request gets the full test run but is never deployed. A failing test on
 | Command | What it checks |
 |---|---|
 | `npm run check` | every question has 4 options and a valid answer; the Sheet seed TSV matches `questions.json`; the Apps Script parses; **no real spreadsheet IDs are committed** (this repo is public); `apiEndpoint` is an Apps Script URL |
-| `npm test` | the wheel never lands on an out-of-stock or withdrawn prize and follows the weights; phone handling; and the **real Apps Script** run against a fake Sheet — one row per visitor, digits-only phones, one prize per mobile, optional email, formula-safe text, the header-less-tab repair |
+| `npm test` | the wheel never lands on an out-of-stock or withdrawn prize and follows the weights; phone handling; and the **real Apps Script** run against a fake Sheet — one row per visitor, digits-only phones, one prize per mobile, voucher codes reserved/claimed exactly once, every email via Pabbly, formula-safe text, the header-less-tab repair |
 | `npm run test:e2e` | the full visitor journey in Chromium at 1024×768 and 390×844, with the Apps Script faked so tests never write to the live Sheet |
 | `npm run ci` | all of the above, in order |
 
@@ -123,13 +123,15 @@ than one row per step.
 campaigns — one physical box of prizes, one stock count. If the two should have
 independent prizes, copy the tab to `GiftsCPHI` and change `GIFTS_TAB` in the script.
 
-**`Settings` is shared too.** `setupSheets` adds two rows to it and touches nothing
-else:
+**`Settings` is shared too.** `setupSheets` adds these rows to it (only if missing)
+and touches nothing else:
 
 | Key | What it does |
 |---|---|
-| `cphiEventName` | Event name in emails and the header tag. Defaults to `CPHI`. |
+| `cphiEventName` | Short event name. Defaults to `CPHI`. |
 | `cphiPabblyWebhook` | Optional. Pabbly Connect webhook for a WhatsApp confirmation. Leave blank to skip WhatsApp entirely. |
+| `cphiEmailWebhook` | **Required for email.** Pabbly Connect webhook whose "Send Email" step sends the visitor email from info@eqova.in. Blank = no email at all. |
+| `cphiContactPhone`, `cphiContactEmail`, `cphiWebsite` | The 📞 / ✉️ / 🌐 footer of the email. Blank ones are left out. |
 
 It is a **separate key** from the doctor app's `pabblyWebhook`, so the two campaigns
 can point at different workflows, or this one at none.
@@ -153,18 +155,28 @@ version pinned when it was deployed. After any edit:
 The URL stays the same. Skipping this is the single most common reason an Apps Script
 change appears to do nothing.
 
-## Email, and why it goes quiet
+## Email and vouchers
 
-`MailApp` sends as whichever Google account holds the **live deployment** — not
-necessarily whoever owns the script file — and there is no from-address override. To
-send as a particular address, deploy from that account.
+**No mail is sent from the Google account that runs the script.** On the final
+screen the script builds the finished email — `subject`, `html` and `text` — and
+posts it to the `cphiEmailWebhook` Pabbly workflow, which sends it from
+info@eqova.in. In Pabbly, map those three fields (and `to`, `toName`, `replyTo`)
+straight into the Send Email step; the wording lives in `buildEmail` in the script.
 
-Gmail's quota is **~100 recipients/day on a free account, 1,500 on Workspace**. Each
-entry sends one mail to the visitor plus one to `notifyEmail` if that Setting is
-filled in, so leaving `notifyEmail` blank doubles how many entries a day you can mail.
-Hitting the quota looks exactly like success from the visitor's side, which is why
-`submitEntry` logs the failure *and the remaining quota* when a send throws — check
-the Apps Script **Executions** view if mail stops arriving.
+**Vouchers** come from the `GiftVouchers` tab
+(`CouponID | Type | Code | Pin | Status | Terms | ClaimedBy`, optional `Amount`,
+`Expiry`). A prize on `Gifts` is a voucher when its title contains a `Type` —
+"Amazon Voucher ₹500" draws Amazon codes. `Status` moves:
+
+- `AVAILABLE` → `RESERVED` the moment the wheel lands on it (under the same lock as
+  stock, so two winners never get one code). No AVAILABLE code left = the prize
+  "just ran out" and the visitor re-spins.
+- `RESERVED` → `CLAIMED` once Pabbly accepts the email carrying it. `ClaimedBy`
+  holds `ref · name · phone · email · time`.
+
+A code left `RESERVED` (webhook paused, visitor walked off before the last
+screen) is delivered by running **`sendPendingVouchers`** from the editor. Codes are
+never written to the execution log.
 
 Two deliberate differences from the doctor app's script, both fixing ways it went
 silently quiet:
